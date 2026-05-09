@@ -1,44 +1,46 @@
-# 🔥 FireGuardAI - IoT Fire Monitoring System
+# 🔥 FireGuardAI - Sistem Monitoring Kebakaran IoT
 
 <div align="center">
 
-![FireGuardAI - Location Sensor Mapping](public/Location%20Sensor.png)
+![FireGuardAI - Pemetaan Lokasi Sensor](public/Location%20Sensor.png)
 
-**Smart Fire Detection & Monitoring System with AI Assistant**
+**Sistem Deteksi & Monitoring Kebakaran Cerdas dengan AI Assistant**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-*Real-time IoT monitoring with interactive maps, AI assistant, and ESP32 integration*
+*Monitoring IoT real-time dengan peta interaktif, AI assistant, dan integrasi ESP32*
 
-[Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [Hardware Setup](#-hardware-setup) • [Usage](#-usage) • [API](#-api-documentation)
+[Fitur](#-fitur) • [Demo](#-demo) • [Instalasi](#-instalasi) • [Setup Hardware](#-setup-hardware) • [Penggunaan](#-penggunaan) • [Dokumentasi API](#-dokumentasi-api)
 
 </div>
 
 ---
 
-## 📖 Overview
+## 📖 Ringkasan
 
 FireGuardAI adalah sistem monitoring kebakaran berbasis IoT yang mengintegrasikan sensor ESP32 dengan dashboard web real-time dan AI assistant. Sistem ini dirancang untuk mendeteksi suhu tinggi, api, dan kondisi berbahaya lainnya, kemudian memberikan alert dan analisis melalui interface yang user-friendly.
 
-### 🎯 Key Highlights
+> **🚧 Status Pengembangan:** Saat ini sistem fokus pada **monitoring suhu (temperature)** sebagai sensor utama. Sensor lain seperti flame detection, gas level, dan humidity masih dalam tahap pengembangan dan akan ditambahkan di versi mendatang.
 
-- ✅ **Real-time Monitoring** - Monitor suhu, kelembaban, dan deteksi api secara real-time
+### 🎯 Fitur Utama
+
+- ✅ **Monitoring Real-time** - Monitor suhu, kelembaban, dan deteksi api secara real-time
 - 🤖 **AI Assistant** - Chatbot cerdas dengan OpenRouter untuk analisis dan troubleshooting
-- 📍 **Location Tracking** - Pemetaan device dengan koordinat GPS (EPSG:4326/WGS 84)
-- 📊 **Data Visualization** - Charts dan grafik untuk analisis trend
-- 🔔 **Smart Alerts** - Notifikasi otomatis untuk kondisi berbahaya
-- 🌐 **Multi-Database** - Support SQLite, PostgreSQL, dan Supabase
-- 🔐 **API Key Authentication** - Keamanan device dengan API key
-- 🎨 **Dark Mode** - Interface modern dengan dark mode support
+- 📍 **Pelacakan Lokasi** - Pemetaan perangkat dengan koordinat GPS (EPSG:4326/WGS 84)
+- 📊 **Visualisasi Data** - Grafik dan chart untuk analisis trend
+- 🔔 **Alert Cerdas** - Notifikasi otomatis untuk kondisi berbahaya
+- 🌐 **Multi-Database** - Mendukung SQLite, PostgreSQL, dan Supabase
+- 🔐 **Autentikasi API Key** - Keamanan perangkat dengan API key
+- 🎨 **Dark Mode** - Interface modern dengan dukungan dark mode
 
 ---
 
 ## 🖼️ Demo
 
-### 📱 ESP32 Devices
+### 📱 Perangkat ESP32
 
 <div align="center">
 <table>
@@ -46,16 +48,16 @@ FireGuardAI adalah sistem monitoring kebakaran berbasis IoT yang mengintegrasika
 <td align="center">
 <img src="public/ESP32_1.png" alt="ESP32 Device 1" width="400"/>
 <br/>
-<b>ESP32 Device #1</b>
+<b>Perangkat ESP32 #1</b>
 <br/>
-Temperature & Humidity Sensor
+Sensor Suhu & Kelembaban
 </td>
 <td align="center">
 <img src="public/ESP32_2.png" alt="ESP32 Device 2" width="400"/>
 <br/>
-<b>ESP32 Device #2</b>
+<b>Perangkat ESP32 #2</b>
 <br/>
-Flame Detection Sensor
+Sensor Deteksi Api
 </td>
 </tr>
 </table>
@@ -66,70 +68,72 @@ Flame Detection Sensor
 <div align="center">
 <img src="public/AI_chatbot.png" alt="AI Chatbot" width="600"/>
 <br/>
-<b>AI Assistant with Real-time Data Integration</b>
+<b>AI Assistant dengan Integrasi Data Real-time</b>
 <br/>
-Ask questions, get insights, and troubleshoot issues
+Tanyakan pertanyaan, dapatkan insight, dan troubleshoot masalah
 </div>
 
-### 📍 Location Sensor Mapping
+### 📍 Pemetaan Lokasi Sensor
 
 <div align="center">
 <img src="public/Location Sensor.png" alt="Location Sensor" width="600"/>
 <br/>
-<b>Interactive Map with Device Locations</b>
+<b>Peta Interaktif dengan Lokasi Perangkat</b>
 <br/>
-Track all devices with GPS coordinates (EPSG:4326)
+Lacak semua perangkat dengan koordinat GPS (EPSG:4326)
 </div>
 
 ---
 
-## ✨ Features
+## ✨ Fitur
 
-### 🔥 Fire Detection & Monitoring
-- **Temperature Monitoring** - Real-time temperature tracking with threshold alerts
-- **Flame Detection** - Optical flame sensor integration
-- **Gas Level Detection** - Monitor gas concentration levels
-- **Humidity Tracking** - Environmental humidity monitoring
-- **Status Levels** - Normal, Warning, Critical status indicators
+### 🔥 Deteksi & Monitoring Kebakaran
+- **Monitoring Suhu** - Pelacakan suhu real-time dengan alert threshold ✅ **Aktif**
+- **Deteksi Api** - Integrasi sensor api optik 🚧 **Dalam Pengembangan**
+- **Deteksi Level Gas** - Monitor tingkat konsentrasi gas 🚧 **Dalam Pengembangan**
+- **Pelacakan Kelembaban** - Monitoring kelembaban lingkungan 🚧 **Dalam Pengembangan**
+- **Level Status** - Indikator status Normal, Warning, Critical ✅ **Aktif**
+
+> **Catatan:** Saat ini, hanya **sensor suhu** yang sudah sepenuhnya diimplementasikan dan menampilkan data. Sensor lain (api, gas, kelembaban) masih dalam tahap pengembangan dan akan tersedia di update mendatang.
 
 ### 🤖 AI-Powered Assistant
-- **Real-time Data Analysis** - AI analyzes actual sensor data, not dummy data
-- **Location-based Queries** - "Show me devices in Jakarta"
-- **Troubleshooting Help** - Step-by-step guidance for issues
-- **Chat History** - 7-day localStorage with auto-expire
-- **Markdown Formatting** - Beautiful formatted responses with tables, lists, and emojis
+- **Analisis Data Real-time** - AI menganalisis data sensor aktual, bukan data dummy
+- **Query Berbasis Lokasi** - "Tampilkan perangkat di Jakarta"
+- **Bantuan Troubleshooting** - Panduan langkah demi langkah untuk masalah
+- **Riwayat Chat** - localStorage 7 hari dengan auto-expire
+- **Format Markdown** - Response terformat indah dengan tabel, list, dan emoji
 
 ### 📊 Dashboard & Analytics
-- **Real-time KPI Cards** - Total devices, online status, average temperature, alerts
-- **Interactive Map** - Leaflet map with device markers and popups
-- **Temperature Charts** - 24-hour temperature history with Chart.js
-- **Alert Frequency** - Visual alert trends over time
-- **Device Management** - Add, edit, delete devices with modal interface
+- **KPI Card Real-time** - Total perangkat, status online, rata-rata suhu, alert
+- **Peta Interaktif** - Peta Leaflet dengan marker dan popup perangkat
+- **Grafik Suhu** - Riwayat suhu 24 jam dengan Chart.js
+- **Frekuensi Alert** - Trend alert visual dari waktu ke waktu
+- **Manajemen Perangkat** - Tambah, edit, hapus perangkat dengan interface modal
 
-### 📍 Location Features
-- **GPS Coordinates** - EPSG:4326 (WGS 84) standard
-- **Auto-detect Location** - Browser geolocation API
-- **Manual Input** - Latitude/longitude with validation
-- **Map Integration** - OpenStreetMap with dark mode support
-- **Distance Calculation** - Calculate distance between devices
+### 📍 Fitur Lokasi
+- **Koordinat GPS** - Standar EPSG:4326 (WGS 84)
+- **Auto-detect Lokasi** - Browser geolocation API
+- **Input Manual** - Latitude/longitude dengan validasi
+- **Integrasi Peta** - OpenStreetMap dengan dukungan dark mode
+- **Kalkulasi Jarak** - Hitung jarak antar perangkat
 
-### 🔐 Security & Authentication
-- **API Key System** - Secure device authentication
-- **No Login Required** - Self-hosted single-tenant architecture
-- **Environment Variables** - Secure configuration management
-- **Input Validation** - Prevent SQL injection and XSS
+### 🔐 Keamanan & Autentikasi
+- **Sistem API Key** - Autentikasi perangkat yang aman
+- **Tanpa Login** - Arsitektur self-hosted single-tenant
+- **Environment Variables** - Manajemen konfigurasi yang aman
+- **Validasi Input** - Mencegah SQL injection dan XSS
 
 ---
 
-## 🚀 Installation
+## 🚀 Instalasi
 
-### Prerequisites
+### Prasyarat
 
-- **Node.js** 18+ or **Bun** 1.0+
-- **PostgreSQL** 14+ (or SQLite for development)
+- **Node.js** 18+ atau **Bun** 1.0+
+- **PostgreSQL** 14+ (atau SQLite untuk development)
 - **Git**
 
-### Quick Start
+### Mulai Cepat
 
 ```bash
 # 1. Clone repository
@@ -138,54 +142,54 @@ cd FireGuardAI
 
 # 2. Install dependencies
 bun install
-# or
+# atau
 npm install
 
 # 3. Setup environment variables
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env dengan konfigurasi Anda
 
 # 4. Setup database
 bunx prisma generate
 bunx prisma migrate dev
 
-# 5. (Optional) Seed database with sample data
+# 5. (Opsional) Seed database dengan data contoh
 bunx prisma db seed
 
-# 6. Run development server
+# 6. Jalankan development server
 bun run dev
-# or
+# atau
 npm run dev
 
-# 7. Open browser
+# 7. Buka browser
 # http://localhost:3000
 ```
 
 ### Production Build
 
 ```bash
-# Build for production
+# Build untuk production
 bun run build
 
 # Start production server
 bun run start
 
-# Or use PM2 for process management
+# Atau gunakan PM2 untuk process management
 pm2 start "bun run start" --name fireguard
 ```
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Konfigurasi
 
 ### Environment Variables
 
-Create `.env` file in root directory:
+Buat file `.env` di root directory:
 
 ```env
-# Database (choose one)
+# Database (pilih salah satu)
 DATABASE_URL="postgresql://user:password@localhost:5432/fireguard_ai_db"
-# or SQLite for development
+# atau SQLite untuk development
 # DATABASE_URL="file:./prisma/db/custom.db"
 
 # Application
@@ -197,185 +201,183 @@ OPENROUTER_API_KEY="sk-or-v1-your-api-key-here"
 OPENROUTER_MODEL="google/gemini-flash-1.5-8b"
 ```
 
-### Get OpenRouter API Key
+### Dapatkan OpenRouter API Key
 
-1. Go to [OpenRouter.ai](https://openrouter.ai/)
+1. Kunjungi [OpenRouter.ai](https://openrouter.ai/)
 2. Sign up / Login
-3. Navigate to [API Keys](https://openrouter.ai/keys)
-4. Create new key
-5. Copy and paste to `.env`
+3. Navigasi ke [API Keys](https://openrouter.ai/keys)
+4. Buat key baru
+5. Copy dan paste ke `.env`
 
-**Free Models Available:**
-- `google/gemini-flash-1.5-8b` (Recommended)
+**Model Gratis yang Tersedia:**
+- `google/gemini-flash-1.5-8b` (Direkomendasikan)
 - `meta-llama/llama-3.2-3b-instruct:free`
 - `qwen/qwen-2-7b-instruct:free`
 - `microsoft/phi-3-mini-128k-instruct:free`
 
 ---
 
-## 🔧 Hardware Setup
+## 🔧 Setup Hardware
 
-### ESP32 Configuration
+### Konfigurasi ESP32
 
 #### 1. Install Arduino IDE
-- Download from [arduino.cc](https://www.arduino.cc/en/software)
-- Install ESP32 board support
+- Download dari [arduino.cc](https://www.arduino.cc/en/software)
+- Install dukungan board ESP32
 
-#### 2. Install Required Libraries
+#### 2. Install Library yang Diperlukan
 ```
 - WiFi.h (built-in)
 - HTTPClient.h (built-in)
 - ArduinoJson (Library Manager)
-- DHT sensor library (for temperature/humidity)
+- DHT sensor library (untuk suhu/kelembaban)
 ```
 
-#### 3. Configure Firmware
+#### 3. Konfigurasi Firmware
 
-Open `firmware/esp32_fire_monitor_complete/esp32_fire_monitor_complete.ino`
+Buka `firmware/esp32_fire_monitor_complete/esp32_fire_monitor_complete.ino`
 
 ```cpp
-// WiFi Configuration
+// Konfigurasi WiFi
 const char* ssid = "Your_WiFi_SSID";
 const char* password = "Your_WiFi_Password";
 
-// Server Configuration
+// Konfigurasi Server
 const char* serverUrl = "http://YOUR_SERVER_IP:3000/api/device/data";
 
-// Device Configuration
-const char* deviceId = "IoTDevice-0x143000001";  // Unique ID
-const char* apiKey = "fg_your_api_key_here";     // From dashboard
+// Konfigurasi Device
+const char* deviceId = "IoTDevice-0x143000001";  // ID Unik
+const char* apiKey = "fg_your_api_key_here";     // Dari dashboard
 
-// Location (Get from Google Maps)
+// Lokasi (Dapatkan dari Google Maps)
 float latitude = -6.2088;   // Jakarta - Monas
 float longitude = 106.8456;
 ```
 
-#### 4. Upload to ESP32
-1. Connect ESP32 via USB
-2. Select board: **ESP32 Dev Module**
-3. Select port: **/dev/cu.usbserial-xxx** (Mac) or **COM3** (Windows)
-4. Click **Upload**
-5. Open **Serial Monitor** (115200 baud)
+#### 4. Upload ke ESP32
+1. Hubungkan ESP32 via USB
+2. Pilih board: **ESP32 Dev Module**
+3. Pilih port: **/dev/cu.usbserial-xxx** (Mac) atau **COM3** (Windows)
+4. Klik **Upload**
+5. Buka **Serial Monitor** (115200 baud)
 
-#### 5. Get API Key from Dashboard
-1. Open FireGuardAI dashboard
-2. Go to **Devices** page
-3. Click **Add Device**
-4. Fill device name and ID
-5. Click **Add Device**
-6. Click device card to open modal
-7. Copy API key (click eye icon to show)
-8. Paste to ESP32 firmware
+#### 5. Dapatkan API Key dari Dashboard
+1. Buka dashboard FireGuardAI
+2. Pergi ke halaman **Devices**
+3. Klik **Add Device**
+4. Isi nama dan ID perangkat
+5. Klik **Add Device**
+6. Klik card perangkat untuk membuka modal
+7. Copy API key (klik ikon mata untuk menampilkan)
+8. Paste ke firmware ESP32
 
-### Hardware Wiring
+### Wiring Hardware
 
-#### ESP32 Device #1 (Temperature & Humidity)
+#### Perangkat ESP32 (Sensor Suhu LM35)
 ```
-DHT22 Sensor:
-- VCC  → 3.3V
-- GND  → GND
-- DATA → GPIO 4
+Sensor LM35DZ:
+- Pin 1 (VCC)  → ESP32 3.3V
+- Pin 2 (VOUT) → ESP32 GPIO 35
+- Pin 3 (GND)  → ESP32 GND
 
-LED Indicator:
-- Anode  → GPIO 2
-- Cathode → GND (with 220Ω resistor)
+LED Indikator Hijau (NORMAL):
+- Anode (+)  → ESP32 GPIO 25
+- Cathode (-) → Resistor 220Ω → GND
+
+LED Indikator Kuning (WARNING):
+- Anode (+)  → ESP32 GPIO 26
+- Cathode (-) → Resistor 220Ω → GND
+
+LED Indikator Merah (DANGER):
+- Anode (+)  → ESP32 GPIO 27
+- Cathode (-) → Resistor 220Ω → GND
 ```
 
-#### ESP32 Device #2 (Flame Detection)
-```
-Flame Sensor:
-- VCC → 5V
-- GND → GND
-- DO  → GPIO 5
-
-Buzzer (optional):
-- Positive → GPIO 18
-- Negative → GND
-```
+> **Catatan:** Firmware saat ini fokus pada **sensor suhu LM35** saja. Sensor api (flame) dan buzzer tidak digunakan dalam versi ini. LED akan berkedip sesuai status: Hijau (Normal), Kuning (Warning), Merah (Danger).
 
 ---
 
-## 📱 Usage
+## 📱 Penggunaan
 
 ### Dashboard
 
-#### 1. View All Devices
-- Navigate to **Dashboard**
-- See KPI cards: Total devices, Online, Avg temperature, Alerts
-- View interactive map with all device locations
-- Check temperature history chart (24 hours)
+#### 1. Lihat Semua Perangkat
+- Navigasi ke **Dashboard**
+- Lihat KPI card: Total perangkat, Online, Rata-rata suhu, Alert
+- Lihat peta interaktif dengan semua lokasi perangkat
+- Cek grafik riwayat suhu (24 jam)
 
-#### 2. Device Management
-- Go to **Devices** page
-- Click **Add Device** to register new device
-- Click device card to:
-  - View details
-  - Edit name/location
+#### 2. Manajemen Perangkat
+- Pergi ke halaman **Devices**
+- Klik **Add Device** untuk mendaftarkan perangkat baru
+- Klik card perangkat untuk:
+  - Lihat detail
+  - Edit nama/lokasi
   - Copy API key
-  - Delete device
+  - Hapus perangkat
 
-#### 3. Alerts
-- Go to **Alerts** page
-- View all alerts (resolved and unresolved)
-- Filter by severity: Info, Warning, Critical
-- Mark alerts as resolved
+#### 3. Alert
+- Pergi ke halaman **Alerts**
+- Lihat semua alert (resolved dan unresolved)
+- Filter berdasarkan severity: Info, Warning, Critical
+- Tandai alert sebagai resolved
 
 ### AI Chatbot
 
-#### 1. Open Chatbot
-- Click **💬** button at bottom-right corner
-- Chat window opens
+#### 1. Buka Chatbot
+- Klik tombol **💬** di pojok kanan bawah
+- Jendela chat terbuka
 
-#### 2. Ask Questions
+#### 2. Tanyakan Pertanyaan
 ```
-✅ "Show me device status"
-✅ "What's the temperature in Jakarta?"
-✅ "Any alerts today?"
-✅ "Show me devices in Monas"
-✅ "My device won't connect, help!"
+✅ "Tampilkan status perangkat"
+✅ "Berapa suhu di Jakarta?"
+✅ "Ada alert hari ini?"
+✅ "Tampilkan perangkat di Monas"
+✅ "Perangkat saya tidak bisa connect, tolong bantu!"
 ```
 
-#### 3. Chat Features
-- **Refresh** (🔄): Start new conversation
-- **Clear History** (🗑️): Delete all messages
-- **Auto-save**: Chat saved for 7 days
-- **Real-time Data**: AI uses actual sensor readings
+#### 3. Fitur Chat
+- **Refresh** (🔄): Mulai percakapan baru
+- **Clear History** (🗑️): Hapus semua pesan
+- **Auto-save**: Chat tersimpan selama 7 hari
+- **Data Real-time**: AI menggunakan pembacaan sensor aktual
 
-### Location Features
+### Fitur Lokasi
 
-#### 1. Add Device with Location
-- Click **Add Device**
-- Fill device name and ID
-- Click **Auto Detect** for current location
-- Or enter latitude/longitude manually
-- Device appears on map
+#### 1. Tambah Perangkat dengan Lokasi
+- Klik **Add Device**
+- Isi nama dan ID perangkat
+- Klik **Auto Detect** untuk lokasi saat ini
+- Atau masukkan latitude/longitude secara manual
+- Perangkat muncul di peta
 
-#### 2. View on Map
-- Dashboard shows all devices on map
-- Click marker to see device info
-- Map auto-zooms to fit all devices
-- Dark mode support
+#### 2. Lihat di Peta
+- Dashboard menampilkan semua perangkat di peta
+- Klik marker untuk melihat info perangkat
+- Peta auto-zoom untuk menyesuaikan semua perangkat
+- Dukungan dark mode
 
 ---
 
-## 🔌 API Documentation
+## 🔌 Dokumentasi API
 
 ### Base URL
 ```
 http://localhost:3000/api
 ```
 
-### Authentication
-All device endpoints require API key in request body:
+### Autentikasi
+Semua endpoint perangkat memerlukan API key di request body:
 ```json
 {
   "apiKey": "fg_your_api_key_here"
 }
 ```
 
-### Endpoints
+### Endpoint
 
-#### 1. Send Sensor Data
+#### 1. Kirim Data Sensor
 ```http
 POST /api/device/data
 Content-Type: application/json
@@ -391,17 +393,26 @@ Content-Type: application/json
 }
 ```
 
-#### 2. Get All Devices
+**Status Sensor:**
+- ✅ **temperature** - Sudah diimplementasikan penuh dan aktif
+- 🚧 **humidity** - Dalam pengembangan (diterima tapi tidak ditampilkan)
+- 🚧 **flameDetected** - Dalam pengembangan (diterima tapi tidak ditampilkan)
+- 🚧 **gasLevel** - Dalam pengembangan (diterima tapi tidak ditampilkan)
+- ✅ **statusLevel** - Sudah diimplementasikan penuh dan aktif
+
+> **Catatan:** Saat ini, dashboard hanya menampilkan data **suhu**. Nilai sensor lain disimpan di database tetapi belum divisualisasikan di UI. Dukungan sensor lengkap akan hadir di v1.1.
+
+#### 2. Dapatkan Semua Perangkat
 ```http
 GET /api/devices
 ```
 
-#### 3. Get Device by ID
+#### 3. Dapatkan Perangkat berdasarkan ID
 ```http
 GET /api/devices/:id
 ```
 
-#### 4. Create Device
+#### 4. Buat Perangkat
 ```http
 POST /api/devices
 Content-Type: application/json
@@ -415,25 +426,25 @@ Content-Type: application/json
 }
 ```
 
-#### 5. Update Device
+#### 5. Update Perangkat
 ```http
 PUT /api/devices/:id
 Content-Type: application/json
 
 {
   "deviceName": "ESP32 - Updated",
-  "location": "New Location",
+  "location": "Lokasi Baru",
   "latitude": -6.2088,
   "longitude": 106.8456
 }
 ```
 
-#### 6. Delete Device
+#### 6. Hapus Perangkat
 ```http
 DELETE /api/devices/:id
 ```
 
-#### 7. Chat with AI
+#### 7. Chat dengan AI
 ```http
 POST /api/chat
 Content-Type: application/json
@@ -442,19 +453,19 @@ Content-Type: application/json
   "messages": [
     {
       "role": "user",
-      "content": "Show me device status"
+      "content": "Tampilkan status perangkat"
     }
   ],
   "includeContext": true
 }
 ```
 
-#### 8. Get Dashboard Stats
+#### 8. Dapatkan Statistik Dashboard
 ```http
 GET /api/dashboard/stats
 ```
 
-#### 9. Get Alerts
+#### 9. Dapatkan Alert
 ```http
 GET /api/alerts
 ```
@@ -520,42 +531,42 @@ model Alert {
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
+- **Next.js 16** - Framework React dengan App Router
+- **TypeScript** - Pengembangan type-safe
 - **Tailwind CSS** - Utility-first CSS
-- **shadcn/ui** - Beautiful UI components
-- **Framer Motion** - Smooth animations
-- **Leaflet** - Interactive maps
-- **Chart.js** - Data visualization
+- **shadcn/ui** - Komponen UI yang indah
+- **Framer Motion** - Animasi yang smooth
+- **Leaflet** - Peta interaktif
+- **Chart.js** - Visualisasi data
 - **Zustand** - State management
 
 ### Backend
 - **Next.js API Routes** - Serverless functions
 - **Prisma ORM** - Database toolkit
-- **PostgreSQL** - Production database
-- **SQLite** - Development database
+- **PostgreSQL** - Database production
+- **SQLite** - Database development
 
-### AI & External Services
-- **OpenRouter** - AI model access
-- **OpenStreetMap** - Map tiles
-- **Browser Geolocation API** - Location detection
+### AI & Layanan Eksternal
+- **OpenRouter** - Akses model AI
+- **OpenStreetMap** - Tile peta
+- **Browser Geolocation API** - Deteksi lokasi
 
 ### IoT
 - **ESP32** - Microcontroller
-- **DHT22** - Temperature/humidity sensor
-- **Flame Sensor** - Fire detection
-- **Arduino IDE** - Firmware development
+- **DHT22** - Sensor suhu/kelembaban
+- **Flame Sensor** - Deteksi api
+- **Arduino IDE** - Pengembangan firmware
 
 ---
 
-## 📁 Project Structure
+## 📁 Struktur Proyek
 
 ```
 FireGuardAI/
-├── public/                    # Static assets
-│   ├── ESP32_1.png           # Device photos
+├── public/                    # Asset statis
+│   ├── ESP32_1.png           # Foto perangkat
 │   ├── ESP32_2.png
-│   ├── AI_chatbot.png        # Screenshots
+│   ├── AI_chatbot.png        # Screenshot
 │   ├── Location Sensor.png
 │   └── icon.svg              # Favicon & Icon
 ├── src/
@@ -564,67 +575,67 @@ FireGuardAI/
 │   │   │   ├── chat/         # AI chatbot
 │   │   │   ├── devices/      # Device CRUD
 │   │   │   ├── device/data/  # IoT data ingestion
-│   │   │   ├── alerts/       # Alert management
-│   │   │   └── dashboard/    # Dashboard stats
+│   │   │   ├── alerts/       # Manajemen alert
+│   │   │   └── dashboard/    # Statistik dashboard
 │   │   ├── layout.tsx        # Root layout
-│   │   └── page.tsx          # Home page
-│   ├── components/           # React components
-│   │   ├── chat/             # AI chatbot UI
-│   │   ├── dashboard/        # Dashboard views
-│   │   ├── devices/          # Device management
-│   │   ├── maps/             # Map components
-│   │   ├── alerts/           # Alert views
-│   │   └── ui/               # shadcn/ui components
+│   │   └── page.tsx          # Halaman home
+│   ├── components/           # Komponen React
+│   │   ├── chat/             # UI AI chatbot
+│   │   ├── dashboard/        # View dashboard
+│   │   ├── devices/          # Manajemen perangkat
+│   │   ├── maps/             # Komponen peta
+│   │   ├── alerts/           # View alert
+│   │   └── ui/               # Komponen shadcn/ui
 │   ├── lib/                  # Utilities
 │   │   ├── db.ts             # Prisma client
 │   │   ├── openrouter.ts     # AI client
-│   │   ├── coordinates.ts    # GPS utilities
-│   │   └── utils.ts          # Helper functions
+│   │   ├── coordinates.ts    # Utilitas GPS
+│   │   └── utils.ts          # Fungsi helper
 │   ├── stores/               # Zustand stores
-│   │   └── app-store.ts      # Global state
+│   │   └── app-store.ts      # State global
 │   └── types/                # TypeScript types
 │       └── index.ts
 ├── prisma/                   # Database
-│   ├── schema.prisma         # Database schema
-│   └── seed.ts               # Seed data
-├── firmware/                 # ESP32 firmware
+│   ├── schema.prisma         # Schema database
+│   └── seed.ts               # Data seed
+├── firmware/                 # Firmware ESP32
 │   └── esp32_fire_monitor_complete/
 │       └── esp32_fire_monitor_complete.ino
 ├── .env                      # Environment variables
-├── .env.example              # Environment template
+├── .env.example              # Template environment
 ├── package.json              # Dependencies
-├── tsconfig.json             # TypeScript config
-├── tailwind.config.ts        # Tailwind config
-└── README.md                 # This file
+├── tsconfig.json             # Konfigurasi TypeScript
+├── tailwind.config.ts        # Konfigurasi Tailwind
+└── README.md                 # File ini
 ```
 
 ---
 
-## 🔒 Security
+## 🔒 Keamanan
 
 ### Best Practices
-- ✅ API keys stored in environment variables
-- ✅ Input validation on all endpoints
-- ✅ SQL injection prevention with Prisma
-- ✅ XSS protection with React
-- ✅ HTTPS recommended for production
-- ✅ Rate limiting recommended
-- ✅ CORS configuration
+- ✅ API key disimpan di environment variables
+- ✅ Validasi input di semua endpoint
+- ✅ Pencegahan SQL injection dengan Prisma
+- ✅ Proteksi XSS dengan React
+- ✅ HTTPS direkomendasikan untuk production
+- ✅ Rate limiting direkomendasikan
+- ✅ Konfigurasi CORS
 
-### Recommendations
-1. **Change default credentials** in production
-2. **Use strong API keys** (auto-generated)
-3. **Enable HTTPS** with SSL certificate
-4. **Set up firewall rules** on server
-5. **Regular database backups**
-6. **Monitor API usage**
-7. **Update dependencies** regularly
+### Rekomendasi
+1. **Ubah kredensial default** di production
+2. **Gunakan API key yang kuat** (auto-generated)
+3. **Aktifkan HTTPS** dengan sertifikat SSL
+4. **Setup firewall rules** di server
+5. **Backup database secara berkala**
+6. **Monitor penggunaan API**
+7. **Update dependencies** secara berkala
 
 ---
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Vercel (Direkomendasikan)
 
 ```bash
 # 1. Install Vercel CLI
@@ -636,7 +647,7 @@ vercel login
 # 3. Deploy
 vercel
 
-# 4. Add environment variables in Vercel dashboard
+# 4. Tambahkan environment variables di dashboard Vercel
 # - DATABASE_URL
 # - OPENROUTER_API_KEY
 # - NEXT_PUBLIC_APP_URL
@@ -645,7 +656,7 @@ vercel
 ### VPS / Self-Hosted
 
 ```bash
-# 1. Clone repository on server
+# 1. Clone repository di server
 git clone https://github.com/yourusername/FireGuardAI.git
 cd FireGuardAI
 
@@ -654,7 +665,7 @@ bun install
 
 # 3. Setup environment
 cp .env.example .env
-# Edit .env with production values
+# Edit .env dengan nilai production
 
 # 4. Setup database
 bunx prisma generate
@@ -663,16 +674,16 @@ bunx prisma migrate deploy
 # 5. Build
 bun run build
 
-# 6. Start with PM2
+# 6. Start dengan PM2
 pm2 start "bun run start" --name fireguard
 pm2 save
 pm2 startup
 
 # 7. Setup Nginx reverse proxy
-# 8. Setup SSL with Let's Encrypt
+# 8. Setup SSL dengan Let's Encrypt
 ```
 
-### Docker (Coming Soon)
+### Docker (Segera Hadir)
 
 ```bash
 # Build image
@@ -684,60 +695,85 @@ docker run -p 3000:3000 --env-file .env fireguard-ai
 
 ---
 
-## 🤝 Contributing
+## ⚠️ Keterbatasan Saat Ini
 
-Contributions are welcome! Please follow these steps:
+### Dukungan Sensor
+Saat ini, FireGuardAI v1.0.0 fokus pada **monitoring suhu** sebagai sensor utama:
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+| Sensor | Dukungan API | Penyimpanan Database | Tampilan UI | Status |
+|--------|-------------|---------------------|-------------|--------|
+| 🌡️ Suhu | ✅ Ya | ✅ Ya | ✅ Ya | **Aktif** |
+| 💧 Kelembaban | ✅ Ya | ✅ Ya | ❌ Tidak | Dalam Pengembangan |
+| 🔥 Deteksi Api | ✅ Ya | ✅ Ya | ❌ Tidak | Dalam Pengembangan |
+| 💨 Level Gas | ✅ Ya | ✅ Ya | ❌ Tidak | Dalam Pengembangan |
 
-### Development Guidelines
-- Follow TypeScript best practices
-- Use ESLint and Prettier
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation
+**Apa Artinya:**
+- ✅ Anda dapat mengirim semua data sensor via API
+- ✅ Semua data sensor disimpan di database
+- ⚠️ Hanya suhu yang ditampilkan di dashboard dan grafik
+- 🚧 Sensor lain akan divisualisasikan di v1.1
 
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👥 Authors
-
-- **Your Name** - *Initial work* - [GitHub](https://github.com/yourusername)
+**Solusi Sementara:**
+- Gunakan Prisma Studio untuk melihat semua data sensor: `bunx prisma studio`
+- Query database secara langsung untuk data kelembaban, api, dan gas
+- AI chatbot dapat mengakses semua data sensor (tersimpan tapi tidak divisualisasikan)
 
 ---
 
-## 🙏 Acknowledgments
+## 🤝 Kontribusi
 
-- [Next.js](https://nextjs.org/) - React framework
+Kontribusi sangat diterima! Silakan ikuti langkah-langkah berikut:
+
+1. Fork repository
+2. Buat feature branch (`git checkout -b feature/FiturKeren`)
+3. Commit perubahan (`git commit -m 'Tambah FiturKeren'`)
+4. Push ke branch (`git push origin feature/FiturKeren`)
+5. Buka Pull Request
+
+### Panduan Pengembangan
+- Ikuti best practices TypeScript
+- Gunakan ESLint dan Prettier
+- Tulis commit message yang bermakna
+- Tambahkan test untuk fitur baru
+- Update dokumentasi
+
+---
+
+## 📝 Lisensi
+
+Proyek ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) untuk detail.
+
+---
+
+## 👥 Penulis
+
+- **Your Name** - *Karya awal* - [GitHub](https://github.com/yourusername)
+
+---
+
+## 🙏 Ucapan Terima Kasih
+
+- [Next.js](https://nextjs.org/) - Framework React
 - [Prisma](https://www.prisma.io/) - Database ORM
-- [OpenRouter](https://openrouter.ai/) - AI model access
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Leaflet](https://leafletjs.com/) - Interactive maps
-- [Chart.js](https://www.chartjs.org/) - Data visualization
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
+- [OpenRouter](https://openrouter.ai/) - Akses model AI
+- [shadcn/ui](https://ui.shadcn.com/) - Komponen UI
+- [Leaflet](https://leafletjs.com/) - Peta interaktif
+- [Chart.js](https://www.chartjs.org/) - Visualisasi data
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
 
 ---
 
-## 📞 Support
+## 📞 Dukungan
 
-### Documentation
-- [Setup Guide](SETUP-GUIDE.md)
-- [AI Chatbot Features](CHATBOT-FEATURES.md)
-- [Coordinate System Guide](COORDINATE-SYSTEM-GUIDE.md)
-- [Implementation Summary](IMPLEMENTATION-SUMMARY.md)
+### Dokumentasi
+- [Panduan Setup](SETUP-GUIDE.md)
+- [Fitur AI Chatbot](CHATBOT-FEATURES.md)
+- [Panduan Sistem Koordinat](COORDINATE-SYSTEM-GUIDE.md)
+- [Ringkasan Implementasi](IMPLEMENTATION-SUMMARY.md)
 
-### Get Help
+### Dapatkan Bantuan
 - 📧 Email: support@fireguardai.com
-- 💬 Discord: [Join our community](#)
+- 💬 Discord: [Bergabung dengan komunitas kami](#)
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/FireGuardAI/issues)
 - 📖 Wiki: [GitHub Wiki](https://github.com/yourusername/FireGuardAI/wiki)
 
@@ -745,48 +781,53 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-### Version 2.0 (Current)
-- ✅ Real-time monitoring
-- ✅ AI chatbot with real data
-- ✅ Location tracking
-- ✅ Chat history (7 days)
+### Versi 1.0.0 (Saat Ini) ✅
+- ✅ Monitoring suhu real-time
+- ✅ AI chatbot dengan data real
+- ✅ Pelacakan lokasi
+- ✅ Riwayat chat (7 hari)
 - ✅ Dark mode
+- ✅ Peta interaktif
 
-### Version 2.1 (Planned)
-- [ ] Voice input for chatbot
-- [ ] Export chat history
-- [ ] Multi-language support (ID/EN)
-- [ ] Streaming AI responses
-- [ ] Push notifications
-- [ ] Email alerts
+### Versi 1.1 (Dalam Proses) 🚧
+- 🚧 **Tampilan sensor kelembaban** - Visualisasi UI
+- 🚧 **Tampilan deteksi api** - Integrasi alert
+- 🚧 **Monitoring level gas** - Grafik dashboard
+- [ ] Input suara untuk chatbot
+- [ ] Export riwayat chat
+- [ ] Dukungan multi-bahasa (ID/EN)
+- [ ] Response AI streaming
+- [ ] Push notification
+- [ ] Email alert
 
-### Version 3.0 (Future)
-- [ ] Mobile app (React Native)
-- [ ] Multi-tenant with authentication
-- [ ] Advanced analytics
-- [ ] Machine learning predictions
-- [ ] Telegram bot integration
-- [ ] SMS alerts
+### Versi 2.0 (Masa Depan) 📅
+- [ ] Aplikasi mobile (React Native)
+- [ ] Multi-tenant dengan autentikasi
+- [ ] Analytics lanjutan
+- [ ] Prediksi machine learning
+- [ ] Integrasi bot Telegram
+- [ ] SMS alert
+- [ ] **Dashboard multi-sensor lengkap**
 
 ---
 
-## 📊 Statistics
+## 📊 Statistik
 
-- **Lines of Code:** ~15,000+
-- **Components:** 50+
-- **API Endpoints:** 12
-- **Database Tables:** 3
-- **Supported Devices:** Unlimited
-- **Languages:** TypeScript, C++ (Arduino)
+- **Baris Kode:** ~15,000+
+- **Komponen:** 50+
+- **API Endpoint:** 12
+- **Tabel Database:** 3
+- **Perangkat yang Didukung:** Unlimited
+- **Bahasa:** TypeScript, C++ (Arduino)
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by FireGuardAI Team**
+**Dibuat dengan ❤️ oleh Tim FireGuardAI**
 
-⭐ Star us on GitHub — it helps!
+⭐ Beri kami bintang di GitHub — sangat membantu!
 
-[Website](#) • [Documentation](#) • [Demo](#) • [Support](#)
+[Website](#) • [Dokumentasi](#) • [Demo](#) • [Dukungan](#)
 
 </div>
