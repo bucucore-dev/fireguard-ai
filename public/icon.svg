@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#EA580C"/>
+  
+  <!-- Flame icon -->
+  <path d="M32 12C32 12 24 20 24 28C24 32.4183 27.5817 36 32 36C36.4183 36 40 32.4183 40 28C40 20 32 12 32 12Z" fill="#FFF7ED"/>
+  <path d="M32 18C32 18 28 22 28 26C28 28.2091 29.7909 30 32 30C34.2091 30 36 28.2091 36 26C36 22 32 18 32 18Z" fill="#FDBA74"/>
+  <path d="M32 22C32 22 30 24 30 26C30 27.1046 30.8954 28 32 28C33.1046 28 34 27.1046 34 26C34 24 32 22 32 22Z" fill="#FB923C"/>
+  
+  <!-- Shield outline -->
+  <path d="M32 40L20 44V50C20 54 24 56 32 56C40 56 44 54 44 50V44L32 40Z" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+  
+  <!-- AI Circuit lines -->
+  <circle cx="26" cy="48" r="1.5" fill="#EA580C"/>
+  <circle cx="32" cy="46" r="1.5" fill="#EA580C"/>
+  <circle cx="38" cy="48" r="1.5" fill="#EA580C"/>
+  <line x1="26" y1="48" x2="32" y2="46" stroke="#EA580C" stroke-width="1"/>
+  <line x1="32" y1="46" x2="38" y2="48" stroke="#EA580C" stroke-width="1"/>
+</svg>

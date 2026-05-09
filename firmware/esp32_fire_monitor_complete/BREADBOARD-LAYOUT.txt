@@ -1,0 +1,200 @@
+========================================
+🔌 BREADBOARD LAYOUT - LM35 WIRING
+========================================
+
+BREADBOARD STRUCTURE:
+┌─────────────────────────────────────────────────────┐
+│  + Rail (3.3V) ═══════════════════════════════════  │
+│  - Rail (GND)  ═══════════════════════════════════  │
+│                                                     │
+│  A   B   C   D   E       F   G   H   I   J         │
+│  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●   1     │
+│  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●   2     │
+│  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●   3     │
+│  ...                                 ...            │
+│  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●   35    │
+│  ...                                 ...            │
+│  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●   60    │
+└─────────────────────────────────────────────────────┘
+
+CATATAN:
+- A-B-C-D-E terhubung horizontal (sisi kiri)
+- F-G-H-I-J terhubung horizontal (sisi kanan)
+- TIDAK terhubung antara E dan F (ada gap)
+- + Rail dan - Rail di sisi kanan breadboard
+
+========================================
+ESP32 POSITION
+========================================
+
+ESP32 mengisi breadboard dari row 1-30 (contoh):
+
+Row 1:  [ESP32 Pin 1]  F1-G1-H1-I1-J1
+Row 2:  [ESP32 Pin 2]  F2-G2-H2-I2-J2
+...
+Row 15: [3.3V]         F15-G15-H15-I15-J15  ← Hubungkan J15 ke + Rail
+Row 16: [GND]          F16-G16-H16-I16-J16  ← Hubungkan J16 ke - Rail
+...
+Row 25: [GPIO 35]      F25-G25-H25-I25-J25  ← Ini untuk LM35 VOUT!
+...
+Row 30: [ESP32 Pin 30] F30-G30-H30-I30-J30
+
+========================================
+STEP 1: SETUP POWER RAILS
+========================================
+
+1. Cari pin 3.3V di ESP32 (biasanya row 15, sisi kanan)
+   
+   ESP32 3.3V (J15) ──────┐
+                          │
+                          ├──→ + Rail (3.3V)
+                          │
+   Jumper wire ───────────┘
+
+2. Cari pin GND di ESP32 (biasanya row 16, sisi kanan)
+   
+   ESP32 GND (J16) ───────┐
+                          │
+                          ├──→ - Rail (GND)
+                          │
+   Jumper wire ───────────┘
+
+========================================
+STEP 2: CONNECT LM35
+========================================
+
+LM35 Orientation (dari atas, flat side menghadap Anda):
+┌─────────────┐
+│   LM35DZ    │
+│             │
+│  1   2   3  │
+└──┬──┬──┬───┘
+   │  │  │
+  VCC │ GND
+    VOUT
+
+Pin 1 (VCC)  = Kiri
+Pin 2 (VOUT) = Tengah
+Pin 3 (GND)  = Kanan
+
+WIRING:
+
+1. LM35 Pin 1 (VCC) → + Rail
+   
+   LM35 Pin 1 ────────┐
+                      │
+   Jumper wire ───────┼──→ + Rail (3.3V)
+                      │
+   (Bisa dari mana saja di + Rail)
+
+2. LM35 Pin 2 (VOUT) → Breadboard D35 atau E35
+   
+   LM35 Pin 2 ────────┐
+                      │
+   Jumper wire ───────┼──→ D35 (atau E35)
+                      │
+   (Harus ke row 35, sisi kiri breadboard!)
+
+3. LM35 Pin 3 (GND) → - Rail
+   
+   LM35 Pin 3 ────────┐
+                      │
+   Jumper wire ───────┼──→ - Rail (GND)
+                      │
+   (Bisa dari mana saja di - Rail)
+
+========================================
+VISUAL DIAGRAM
+========================================
+
+Breadboard (Top View):
+
++ Rail ═══════════════════════════════════
+  ↑
+  │ (Jumper dari ESP32 3.3V, J15)
+  │
+- Rail ═══════════════════════════════════
+  ↑
+  │ (Jumper dari ESP32 GND, J16)
+  │
+
+Row 35:
+  A   B   C   D   E       F   G   H   I   J
+  ●   ●   ●   ●   ●       ●   ●   ●   ●   ●
+              ↑                       ↑
+              │                       │
+         LM35 VOUT              ESP32 GPIO35
+         (Pin 2)                (terhubung internal)
+
+LM35 Connections:
+  Pin 1 (VCC)  ──→ + Rail (3.3V)
+  Pin 2 (VOUT) ──→ D35 atau E35
+  Pin 3 (GND)  ──→ - Rail (GND)
+
+========================================
+VERIFICATION CHECKLIST
+========================================
+
+Sebelum power on, cek:
+
+[ ] ESP32 3.3V (J-row) terhubung ke + Rail
+[ ] ESP32 GND (J-row) terhubung ke - Rail
+[ ] LM35 Pin 1 (VCC) terhubung ke + Rail
+[ ] LM35 Pin 2 (VOUT) terhubung ke D35 atau E35
+[ ] LM35 Pin 3 (GND) terhubung ke - Rail
+[ ] Tidak ada short circuit (+ Rail tidak menyentuh - Rail)
+[ ] LM35 orientasi benar (flat side menghadap Anda)
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Problem: Temperature = 0.0°C
+
+Check:
+1. [ ] LM35 VOUT ke D35/E35 (BUKAN row lain!)
+2. [ ] + Rail terhubung ke ESP32 3.3V
+3. [ ] - Rail terhubung ke ESP32 GND
+4. [ ] LM35 orientasi benar (Pin 1 = VCC di kiri)
+5. [ ] Tidak ada jumper lepas
+
+Problem: Temperature = 150°C (terlalu tinggi)
+
+Check:
+1. [ ] VCC dan GND tidak terbalik
+2. [ ] LM35 orientasi benar
+3. [ ] Tidak ada short circuit
+
+Problem: Temperature = -40°C (terlalu rendah)
+
+Check:
+1. [ ] LM35 tidak rusak
+2. [ ] Jumper tidak lepas
+3. [ ] Koneksi ke + Rail dan - Rail solid
+
+========================================
+EXPECTED RESULT
+========================================
+
+Setelah wiring benar dan upload firmware:
+
+Serial Monitor (115200 baud):
+┌─────────────────────────────────────┐
+│ 🔍 LM35 DEBUG INFO:                 │
+│    ADC Raw: 300 / 4095              │
+│    Voltage: 0.242 V                 │
+│    Valid Readings: 10 / 10          │
+│                                     │
+│ 🌡️  Temperature: 24.2°C [NORMAL]   │
+│ 🚦 Status: ✅ NORMAL                │
+└─────────────────────────────────────┘
+
+Jika masih 0.0°C:
+- Cek wiring lagi (lihat checklist di atas)
+- Foto breadboard dan kirim ke instruktur
+
+========================================
+
+Version: 4.0 Complete Edition
+Date: May 9, 2026
+Status: ✅ Ready to Wire!

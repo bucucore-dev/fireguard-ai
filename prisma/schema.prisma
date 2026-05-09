@@ -1,0 +1,84 @@
+// FireGuard AI - Self-Hosted Single Tenant Schema
+// Supports: SQLite (default), PostgreSQL, or Supabase
+// Each deployment is isolated - no multi-tenancy needed
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"  // Use "sqlite" for SQLite, "postgresql" for PostgreSQL/Supabase
+  url      = env("DATABASE_URL")
+}
+
+// Model 1: Device - IoT devices registered in this deployment
+model Device {
+  id          String    @id @default(cuid())
+  deviceId    String    @unique // Unique device identifier (e.g., "ESP32-001")
+  deviceName  String    // Device name (e.g., "Living Room Sensor")
+  apiKey      String    @unique // API Key for device authentication
+  location    String?   // Device location (e.g., "Floor 1 - Living Room")
+  latitude    Float?    // Latitude coordinate for map
+  longitude   Float?    // Longitude coordinate for map
+  status      String    @default("offline") // Status: "online" | "offline"
+  lastSeen    DateTime? // Last time device sent data
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  sensorLogs SensorLog[]
+  alerts     Alert[]
+
+  @@index([status])
+  @@index([lastSeen])
+}
+
+// Model 2: SensorLog - Data sensor real-time
+model SensorLog {
+  id            String   @id @default(cuid())
+  deviceId      String
+  temperature   Float    // Suhu dalam Celsius
+  humidity      Float?   // Kelembaban dalam persen (%)
+  flameDetected Boolean  @default(false) // Deteksi api: true/false
+  gasLevel      Float?   // Level gas (opsional, jika ada sensor gas)
+  statusLevel   String   @default("normal") // Status: "normal" | "warning" | "danger" | "critical"
+  createdAt     DateTime @default(now())
+
+  // Relasi
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([createdAt])
+  @@index([statusLevel])
+}
+
+// Model 3: Alert - Riwayat peringatan/notifikasi
+model Alert {
+  id         String    @id @default(cuid())
+  deviceId   String
+  alertType  String    // Tipe: "fire_detected" | "high_temperature" | "device_offline" | "low_humidity" | "gas_leak"
+  message    String    // Pesan alert
+  severity   String    @default("warning") // Tingkat: "info" | "warning" | "danger" | "critical"
+  resolved   Boolean   @default(false) // Sudah ditangani atau belum
+  resolvedAt DateTime? // Waktu ditandai selesai
+  createdAt  DateTime  @default(now())
+
+  // Relasi
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+}
+
+// Model 4: SystemSettings - Konfigurasi sistem (opsional)
+model SystemSettings {
+  id                    String   @id @default(cuid())
+  key                   String   @unique // Nama setting (contoh: "temp_warning_threshold")
+  value                 String   // Nilai setting (contoh: "50")
+  description           String?  // Deskripsi setting
+  updatedAt             DateTime @updatedAt
+
+  @@index([key])
+}

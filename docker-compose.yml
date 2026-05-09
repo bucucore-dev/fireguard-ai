@@ -1,0 +1,68 @@
+# FireGuard AI - Docker Compose Configuration
+# Self-hosted IoT Fire Monitoring System
+
+version: '3.8'
+
+services:
+  # ============================================
+  # FireGuard Application (SQLite - Default)
+  # ============================================
+  fireguard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fireguard-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./prisma/db/custom.db
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/prisma/db
+    restart: unless-stopped
+    networks:
+      - fireguard-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # Optional: PostgreSQL Database
+  # ============================================
+  # Uncomment this section if you want to use PostgreSQL instead of SQLite
+  # 
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: fireguard-postgres
+  #   environment:
+  #     - POSTGRES_USER=fireguard
+  #     - POSTGRES_PASSWORD=fireguard_secure_password
+  #     - POSTGRES_DB=fireguard
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+  #   networks:
+  #     - fireguard-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U fireguard"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #
+  # Then update fireguard service environment:
+  # - DATABASE_URL=postgresql://fireguard:fireguard_secure_password@postgres:5432/fireguard
+
+networks:
+  fireguard-network:
+    driver: bridge
+
+volumes:
+  # Uncomment if using PostgreSQL
+  # postgres-data:
