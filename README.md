@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![FireGuardAI Logo](public/logo.svg)
+![FireGuardAI - Location Sensor Mapping](public/Location%20Sensor.png)
 
 **Smart Fire Detection & Monitoring System with AI Assistant**
 
@@ -10,6 +10,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+*Real-time IoT monitoring with interactive maps, AI assistant, and ESP32 integration*
 
 [Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [Hardware Setup](#-hardware-setup) • [Usage](#-usage) • [API](#-api-documentation)
 
@@ -555,8 +557,7 @@ FireGuardAI/
 │   ├── ESP32_2.png
 │   ├── AI_chatbot.png        # Screenshots
 │   ├── Location Sensor.png
-│   ├── icon.svg              # Favicon
-│   └── logo.svg              # Logo
+│   └── icon.svg              # Favicon & Icon
 ├── src/
 │   ├── app/                  # Next.js App Router
 │   │   ├── api/              # API routes
