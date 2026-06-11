@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Cpu, MapPin, Wifi, WifiOff, Clock, Key, Eye, EyeOff, Copy, Check,
-  Trash2, Thermometer, Droplets, Flame, Database, RefreshCw,
+  Trash2, Thermometer, Wind, Flame, Database, RefreshCw, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -202,7 +202,7 @@ export function DeviceDetailView() {
       {/* Current Readings */}
       {latestLog && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
                 <Thermometer className={`w-8 h-8 ${latestLog.temperature >= 60 ? "text-red-500" : latestLog.temperature >= 40 ? "text-amber-500" : "text-emerald-500"}`} />
@@ -214,19 +214,28 @@ export function DeviceDetailView() {
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <Droplets className="w-8 h-8 text-blue-500" />
+                <Flame className={`w-8 h-8 ${latestLog.flameDetected ? "text-red-500 animate-pulse-danger" : "text-emerald-500"}`} />
                 <div>
-                  <p className="text-2xl font-bold">{latestLog.humidity ?? "—"}%</p>
-                  <p className="text-xs text-muted-foreground">Humidity</p>
+                  <p className="text-2xl font-bold">{latestLog.flameDetected ? "Detected" : "Clear"}</p>
+                  <p className="text-xs text-muted-foreground">Flame Status</p>
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <Flame className={`w-8 h-8 ${latestLog.flameDetected ? "text-red-500 animate-pulse-danger" : "text-emerald-500"}`} />
+                <Wind className={`w-8 h-8 ${(latestLog.gasLevel ?? 0) >= 2500 ? "text-red-500 animate-pulse-danger" : (latestLog.gasLevel ?? 0) >= 1200 ? "text-amber-500" : "text-emerald-500"}`} />
                 <div>
-                  <p className="text-2xl font-bold">{latestLog.flameDetected ? "Detected" : "Clear"}</p>
-                  <p className="text-xs text-muted-foreground">Flame Status</p>
+                  <p className="text-2xl font-bold">{latestLog.gasLevel ?? 0}<span className="text-sm font-normal text-muted-foreground">/4095</span></p>
+                  <p className="text-xs text-muted-foreground">Gas Level (MQ-2)</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertTriangle className={`w-8 h-8 ${latestLog.statusLevel === "danger" ? "text-red-500" : latestLog.statusLevel === "warning" ? "text-amber-500" : "text-emerald-500"}`} />
+                <div>
+                  <p className="text-2xl font-bold capitalize">{latestLog.statusLevel}</p>
+                  <p className="text-xs text-muted-foreground">System Status</p>
                 </div>
               </CardContent>
             </Card>
@@ -283,8 +292,9 @@ export function DeviceDetailView() {
                           {log.statusLevel}
                         </Badge>
                         <span>{log.temperature}°C</span>
-                        <span className="text-muted-foreground">{log.humidity ?? "—"}%</span>
                         {log.flameDetected && <Flame className="w-3.5 h-3.5 text-red-500" />}
+                        {(log.gasLevel ?? 0) >= 1200 && <Wind className="w-3.5 h-3.5 text-amber-500" />}
+                        <span className="text-muted-foreground text-xs">Gas:{log.gasLevel ?? 0}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
                     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bell, CheckCircle, Flame, AlertTriangle, WifiOff, Thermometer, Filter, RefreshCw } from "lucide-react";
+import { Bell, CheckCircle, Flame, AlertTriangle, WifiOff, Thermometer, Filter, RefreshCw, MapPin, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,30 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
-import type { Alert } from "@/types";
+import type { Alert, Device } from "@/types";
+import { DeviceMap } from "@/components/maps/device-map";
 
 export function AlertsView() {
   const [severity, setSeverity] = useState("all");
   const [resolved, setResolved] = useState("all");
   const [page, setPage] = useState(0);
+  const [devices, setDevices] = useState<Device[]>([]);
   const limit = 20;
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const res = await fetch('/api/devices');
+        const data = await res.json();
+        if (data.success) {
+          setDevices(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch devices:', error);
+      }
+    };
+    fetchDevices();
+  }, []);
 
   const fetchAlerts = useCallback(async () => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(page * limit) });
@@ -70,6 +87,40 @@ export function AlertsView() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (alerts.length === 0) {
+      toast.error("No alerts to export");
+      return;
+    }
+    
+    // Create CSV header
+    const headers = ["ID,Time,Device,Message,Severity,Type,Resolved"];
+    
+    // Create CSV rows
+    const rows = alerts.map(alert => {
+      return [
+        alert.id,
+        new Date(alert.createdAt).toLocaleString().replace(/,/g, ''),
+        alert.device?.deviceName || "Unknown",
+        `"${alert.message.replace(/"/g, '""')}"`,
+        alert.severity,
+        alert.alertType,
+        alert.resolved ? "Yes" : "No"
+      ].join(",");
+    });
+    
+    const csvContent = headers.concat(rows).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `alerts-export-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Alerts exported successfully");
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   if (loading && page === 0) return <AlertsSkeleton />;
@@ -84,15 +135,26 @@ export function AlertsView() {
             Live • Updated {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'just now'}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          className="h-7 text-xs"
-        >
-          <RefreshCw className="w-3 h-3 mr-1" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="h-7 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Export CSV
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            className="h-7 text-xs"
+          >
+            <RefreshCw className="w-3 h-3 mr-1" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Header */}
@@ -130,8 +192,29 @@ export function AlertsView() {
         </Select>
       </div>
 
-      {/* Alert List */}
-      <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
+      {/* Layout Grid: Map and List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Device Map */}
+        <div className="order-2 lg:order-1">
+          <Card className="h-full min-h-[400px] lg:h-[calc(100vh-220px)] flex flex-col">
+            <div className="p-3 border-b flex items-center gap-2 font-medium text-sm flex-shrink-0">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              Alert Locations
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <DeviceMap 
+                devices={devices} 
+                alerts={alerts} 
+                showTooltipOnly={true} 
+                noWrapper={true} 
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* Alert List */}
+        <div className="order-1 lg:order-2 flex flex-col h-[600px] lg:h-[calc(100vh-220px)]">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
         {alerts.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -184,22 +267,24 @@ export function AlertsView() {
             </motion.div>
           ))
         )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page + 1} of {totalPages}
-          </span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-            Next
-          </Button>
+          </div>
+          
+          {/* Pagination inside the list column */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2 border-t mt-2 pb-2">
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {page + 1} of {totalPages}
+              </span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
+                Next
+              </Button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -21,17 +21,15 @@
 
 ## 📖 Ringkasan
 
-FireGuardAI adalah sistem monitoring kebakaran berbasis IoT yang mengintegrasikan sensor ESP32 dengan dashboard web real-time dan AI assistant. Sistem ini dirancang untuk mendeteksi suhu tinggi, api, dan kondisi berbahaya lainnya, kemudian memberikan alert dan analisis melalui interface yang user-friendly.
-
-> **🚧 Status Pengembangan:** Saat ini sistem fokus pada **monitoring suhu (temperature)** sebagai sensor utama. Sensor lain seperti flame detection, gas level, dan humidity masih dalam tahap pengembangan dan akan ditambahkan di versi mendatang.
+FireGuardAI adalah sistem monitoring kebakaran berbasis IoT yang mengintegrasikan sensor ESP32 dengan dashboard web real-time dan AI assistant. Sistem ini dirancang untuk mendeteksi suhu tinggi, gas berbahaya, api, dan kondisi berbahaya lainnya, kemudian memberikan alert dan analisis melalui interface yang user-friendly.
 
 ### 🎯 Fitur Utama
 
-- ✅ **Monitoring Real-time** - Monitor suhu, kelembaban, dan deteksi api secara real-time
+- ✅ **Monitoring Real-time 3 Sensor** - Monitor suhu (LM35), deteksi api (MH Flame), dan konsentrasi gas/asap (MQ-2) secara real-time
 - 🤖 **AI Assistant** - Chatbot cerdas dengan OpenRouter untuk analisis dan troubleshooting
 - 📍 **Pelacakan Lokasi** - Pemetaan perangkat dengan koordinat GPS (EPSG:4326/WGS 84)
-- 📊 **Visualisasi Data** - Grafik dan chart untuk analisis trend
-- 🔔 **Alert Cerdas** - Notifikasi otomatis untuk kondisi berbahaya
+- 📊 **Visualisasi Data & Ekspor** - Grafik untuk analisis trend dan fitur Ekspor Laporan CSV
+- 🔔 **Alert Cerdas** - Notifikasi peringatan dan sirine (LED & Buzzer pada hardware)
 - 🌐 **Multi-Database** - Mendukung SQLite, PostgreSQL, dan Supabase
 - 🔐 **Autentikasi API Key** - Keamanan perangkat dengan API key
 - 🎨 **Dark Mode** - Interface modern dengan dukungan dark mode
@@ -46,18 +44,16 @@ FireGuardAI adalah sistem monitoring kebakaran berbasis IoT yang mengintegrasika
 <table>
 <tr>
 <td align="center">
-<img src="public/ESP32_1.png" alt="ESP32 Device 1" width="400"/>
 <br/>
-<b>Perangkat ESP32 #1</b>
+<b>Perangkat ESP32 dengan 3 Sensor Utama</b>
 <br/>
-Sensor Suhu & Kelembaban
+Sensor Suhu, Sensor Api, dan Sensor Gas MQ-2
 </td>
 <td align="center">
-<img src="public/ESP32_2.png" alt="ESP32 Device 2" width="400"/>
 <br/>
-<b>Perangkat ESP32 #2</b>
+<b>Indikator LED & Buzzer</b>
 <br/>
-Sensor Deteksi Api
+Peringatan Dini secara Fisik
 </td>
 </tr>
 </table>
@@ -89,25 +85,22 @@ Lacak semua perangkat dengan koordinat GPS (EPSG:4326)
 
 ### 🔥 Deteksi & Monitoring Kebakaran
 - **Monitoring Suhu** - Pelacakan suhu real-time dengan alert threshold ✅ **Aktif**
-- **Deteksi Api** - Integrasi sensor api optik 🚧 **Dalam Pengembangan**
-- **Deteksi Level Gas** - Monitor tingkat konsentrasi gas 🚧 **Dalam Pengembangan**
-- **Pelacakan Kelembaban** - Monitoring kelembaban lingkungan 🚧 **Dalam Pengembangan**
-- **Level Status** - Indikator status Normal, Warning, Critical ✅ **Aktif**
-
-> **Catatan:** Saat ini, hanya **sensor suhu** yang sudah sepenuhnya diimplementasikan dan menampilkan data. Sensor lain (api, gas, kelembaban) masih dalam tahap pengembangan dan akan tersedia di update mendatang.
+- **Deteksi Api** - Integrasi sensor api optik MH Flame ✅ **Aktif**
+- **Deteksi Level Gas** - Monitor konsentrasi gas berbahaya/asap dengan sensor MQ-2 ✅ **Aktif**
+- **Sistem Sirine Fisik** - Peringatan visual (LED) dan audio (Buzzer) pada perangkat ✅ **Aktif**
+- **Level Status** - Indikator status Normal, Warning, Danger, Critical ✅ **Aktif**
 
 ### 🤖 AI-Powered Assistant
-- **Analisis Data Real-time** - AI menganalisis data sensor aktual, bukan data dummy
+- **Analisis Data Real-time** - AI menganalisis data sensor aktual
 - **Query Berbasis Lokasi** - "Tampilkan perangkat di Jakarta"
 - **Bantuan Troubleshooting** - Panduan langkah demi langkah untuk masalah
 - **Riwayat Chat** - localStorage 7 hari dengan auto-expire
-- **Format Markdown** - Response terformat indah dengan tabel, list, dan emoji
 
 ### 📊 Dashboard & Analytics
 - **KPI Card Real-time** - Total perangkat, status online, rata-rata suhu, alert
+- **Ekspor Laporan** - Unduh laporan insiden dalam format CSV
 - **Peta Interaktif** - Peta Leaflet dengan marker dan popup perangkat
 - **Grafik Suhu** - Riwayat suhu 24 jam dengan Chart.js
-- **Frekuensi Alert** - Trend alert visual dari waktu ke waktu
 - **Manajemen Perangkat** - Tambah, edit, hapus perangkat dengan interface modal
 
 ### 📍 Fitur Lokasi

@@ -3,185 +3,134 @@ import { db } from "../src/lib/db";
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  // Clean up existing data
-  await db.alert.deleteMany();
-  await db.sensorLog.deleteMany();
-  await db.device.deleteMany();
-  await db.systemSettings.deleteMany();
+  // Clean up existing DUMMY data ONLY
+  // Do NOT delete real devices added via UI
+  const dummyDevices = await db.device.findMany({
+    where: { deviceId: { startsWith: 'ESP32-DUMMY' } }
+  });
+  
+  if (dummyDevices.length > 0) {
+    const dummyDeviceIds = dummyDevices.map(d => d.id);
+    await db.alert.deleteMany({ where: { deviceId: { in: dummyDeviceIds } } });
+    await db.sensorLog.deleteMany({ where: { deviceId: { in: dummyDeviceIds } } });
+    await db.device.deleteMany({ where: { id: { in: dummyDeviceIds } } });
+    console.log(`✅ Cleaned ${dummyDevices.length} existing dummy devices and their logs`);
+  }
 
-  console.log("✅ Cleaned existing data");
+  // System settings can be upserted or left alone instead of deleted, 
+  // but to keep it simple, we won't delete them if we don't want to break existing config
+  // just count them or ensure they exist below.
 
-  // Create devices (IoT sensors)
-  const devices = await Promise.all([
-    db.device.create({
-      data: {
-        deviceId: "ESP32-001",
-        deviceName: "Sensor Ruang Server",
-        location: "Gedung A, Lantai 2",
-        apiKey: "fg_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
-        status: "online",
-        lastSeen: new Date(),
-      },
-    }),
-    db.device.create({
-      data: {
-        deviceId: "ESP32-002",
-        deviceName: "Sensor Gudang",
-        location: "Gedung B",
-        apiKey: "fg_f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3",
-        status: "online",
-        lastSeen: new Date(Date.now() - 300000), // 5 menit lalu
-      },
-    }),
-    db.device.create({
-      data: {
-        deviceId: "ESP32-003",
-        deviceName: "Sensor Dapur",
-        location: "Gedung A, Lantai 1",
-        apiKey: "fg_1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d",
-        status: "offline",
-        lastSeen: new Date(Date.now() - 3600000 * 2), // 2 jam lalu
-      },
-    }),
-    db.device.create({
-      data: {
-        deviceId: "ESP32-004",
-        deviceName: "Sensor Ruang Listrik",
-        location: "Gedung C",
-        apiKey: "fg_6f5e4d3c2b1a6f5e4d3c2b1a6f5e4d3c",
-        status: "online",
-        lastSeen: new Date(Date.now() - 600000), // 10 menit lalu
-      },
-    }),
-  ]);
-  console.log("✅ Created 4 devices");
+  // Create 20 devices (IoT sensors)
+  const devicePromises: any[] = [];
+  for (let i = 1; i <= 20; i++) {
+    devicePromises.push(
+      db.device.create({
+        data: {
+          deviceId: `ESP32-DUMMY-${i.toString().padStart(3, '0')}`,
+          deviceName: `Sensor Titik ${i}`,
+          location: `Area ${Math.ceil(i/5)}, Sektor ${i}`,
+          apiKey: `fg_dummy_key_${i}`,
+          status: "online",
+          lastSeen: new Date(),
+          latitude: -6.200000 + (Math.random() * 0.05 - 0.025), // Random near Jakarta
+          longitude: 106.816666 + (Math.random() * 0.05 - 0.025),
+        },
+      })
+    );
+  }
+  const devices = await Promise.all(devicePromises);
+  console.log(`✅ Created ${devices.length} devices`);
 
-  // Generate sensor logs for each device (last 7 days)
+  // Generate logs for the last 2 hours (120 minutes)
   const now = Date.now();
-  const dayMs = 24 * 60 * 60 * 1000;
+  const minuteMs = 60 * 1000;
+  const totalMinutes = 120;
 
-  for (const device of devices) {
-    const logCount = 40 + Math.floor(Math.random() * 20); // 40-60 logs per device
+  for (let m = 0; m <= totalMinutes; m++) {
+    const createdAt = new Date(now - (totalMinutes - m) * minuteMs);
     
-    for (let i = 0; i < logCount; i++) {
-      const timeOffset = Math.random() * 7 * dayMs;
-      const createdAt = new Date(now - timeOffset);
+    // Every 10 minutes, randomly pick exactly 2 devices to trigger warning/alert
+    const isInterval = (m % 10 === 0);
+    let chosenDevices: string[] = [];
+    
+    if (isInterval) {
+      // Shuffle the devices array and pick the first 2
+      const shuffled = [...devices].sort(() => 0.5 - Math.random());
+      chosenDevices = shuffled.slice(0, 2).map(d => d.id);
+    }
 
-      // Generate realistic temperature with occasional spikes
-      let temp = 25 + Math.random() * 15; // 25-40°C base (normal)
-      const spikeChance = Math.random();
+    for (const device of devices) {
+      let temp = 25 + Math.random() * 5; // Normal: 25-30°C
+      let gasLevel = Math.random() * 10; // Normal gas: 0-10 ppm
       let flameDetected = false;
       let statusLevel: "normal" | "warning" | "danger" | "critical" = "normal";
+      
+      const isChosen = chosenDevices.includes(device.id);
 
-      // Simulate dangerous conditions
-      if (spikeChance > 0.97) {
-        // 3% chance - CRITICAL (fire detected)
-        temp = 85 + Math.random() * 15; // 85-100°C
-        flameDetected = true;
-        statusLevel = "critical";
-      } else if (spikeChance > 0.93) {
-        // 4% chance - DANGER (very high temp)
-        temp = 70 + Math.random() * 15; // 70-85°C
-        flameDetected = Math.random() > 0.7; // 30% chance flame
-        statusLevel = "danger";
-      } else if (spikeChance > 0.85) {
-        // 8% chance - WARNING (high temp)
-        temp = 50 + Math.random() * 20; // 50-70°C
-        statusLevel = "warning";
+      if (isChosen) {
+        // Randomly assign severity: 60% warning, 30% danger, 10% critical
+        const rand = Math.random();
+        if (rand < 0.6) {
+          temp = 50 + Math.random() * 10; // 50-60°C
+          gasLevel = 40 + Math.random() * 20; 
+          statusLevel = "warning";
+        } else if (rand < 0.9) {
+          temp = 70 + Math.random() * 10; // 70-80°C
+          gasLevel = 80 + Math.random() * 20;
+          statusLevel = "danger";
+        } else {
+          temp = 85 + Math.random() * 15; // 85-100°C
+          gasLevel = 100 + Math.random() * 20;
+          flameDetected = true;
+          statusLevel = "critical";
+        }
       }
-
-      const humidity = 40 + Math.random() * 40; // 40-80%
-      const gasLevel = Math.random() * 100; // 0-100 ppm
 
       await db.sensorLog.create({
         data: {
           deviceId: device.id,
           temperature: Math.round(temp * 10) / 10,
-          humidity: Math.round(humidity * 10) / 10,
+          humidity: Math.round((40 + Math.random() * 20) * 10) / 10,
           flameDetected,
           gasLevel: Math.round(gasLevel * 10) / 10,
           statusLevel,
           createdAt,
         },
       });
+
+      if (isChosen) {
+        // Create an alert corresponding to the status
+        let alertType = "high_temperature";
+        let message = `Suhu meningkat pada ${device.deviceName} (${Math.round(temp)}°C)`;
+        
+        if (statusLevel === "danger") {
+          message = `BAHAYA: Suhu/Gas sangat tinggi pada ${device.deviceName} (${Math.round(temp)}°C)!`;
+          if (Math.random() > 0.5) {
+            alertType = "gas_leak";
+            message = `Kebocoran gas terdeteksi pada ${device.deviceName} (${Math.round(gasLevel)} ppm)`;
+          }
+        } else if (statusLevel === "critical") {
+          alertType = "fire_detected";
+          message = `🔥 KEBAKARAN TERDETEKSI pada ${device.deviceName}! Suhu: ${Math.round(temp)}°C`;
+        }
+
+        await db.alert.create({
+          data: {
+            deviceId: device.id,
+            alertType,
+            message,
+            severity: statusLevel,
+            resolved: m < totalMinutes - 20, // older alerts resolved
+            resolvedAt: m < totalMinutes - 20 ? new Date(createdAt.getTime() + 5 * minuteMs) : null,
+            createdAt,
+          },
+        });
+      }
     }
   }
-  console.log("✅ Created sensor logs (last 7 days)");
 
-  // Generate alerts based on sensor data
-  const alertTemplates = [
-    { 
-      type: "high_temperature", 
-      severity: "warning" as const, 
-      messages: [
-        "Suhu meningkat pada {device}: {temp}°C",
-        "Peringatan: Suhu tinggi terdeteksi pada {device}"
-      ] 
-    },
-    { 
-      type: "high_temperature", 
-      severity: "danger" as const, 
-      messages: [
-        "BAHAYA: Suhu sangat tinggi pada {device}: {temp}°C!",
-        "Suhu melebihi batas aman pada {device}"
-      ] 
-    },
-    { 
-      type: "fire_detected", 
-      severity: "critical" as const, 
-      messages: [
-        "🔥 KEBAKARAN TERDETEKSI pada {device}!",
-        "DARURAT: Sensor api aktif pada {device}!",
-        "⚠️ API TERDETEKSI - {device} - Segera evakuasi!"
-      ] 
-    },
-    { 
-      type: "device_offline", 
-      severity: "warning" as const, 
-      messages: [
-        "Perangkat {device} offline",
-        "Koneksi terputus dengan {device}"
-      ] 
-    },
-    { 
-      type: "gas_leak", 
-      severity: "danger" as const, 
-      messages: [
-        "Kebocoran gas terdeteksi pada {device}",
-        "Level gas berbahaya pada {device}"
-      ] 
-    },
-  ];
-
-  for (const device of devices) {
-    const alertCount = 3 + Math.floor(Math.random() * 8); // 3-10 alerts per device
-    
-    for (let i = 0; i < alertCount; i++) {
-      const timeOffset = Math.random() * 7 * dayMs;
-      const template = alertTemplates[Math.floor(Math.random() * alertTemplates.length)];
-      const messageTemplate = template.messages[Math.floor(Math.random() * template.messages.length)];
-      
-      const message = messageTemplate
-        .replace("{device}", device.deviceName)
-        .replace("{temp}", String(Math.round(60 + Math.random() * 35)));
-
-      const createdAt = new Date(now - timeOffset);
-      const isResolved = Math.random() > 0.5; // 50% resolved
-
-      await db.alert.create({
-        data: {
-          deviceId: device.id,
-          alertType: template.type,
-          message,
-          severity: template.severity,
-          resolved: isResolved,
-          resolvedAt: isResolved ? new Date(createdAt.getTime() + 3600000) : null, // 1 hour after
-          createdAt,
-        },
-      });
-    }
-  }
-  console.log("✅ Created alerts");
+  console.log("✅ Created sensor logs and alerts (mostly normal, warning every 10 min)");
 
   // Create system settings
   await db.systemSettings.createMany({
@@ -217,24 +166,15 @@ async function seed() {
         description: "Timeout perangkat offline (detik)",
       },
     ],
+    skipDuplicates: true,
   });
-  console.log("✅ Created system settings");
+  console.log("✅ Created/Verified system settings");
 
   console.log("");
   console.log("🎉 Seeding complete!");
   console.log("");
-  console.log("📊 Summary:");
   console.log(`   - ${devices.length} devices created`);
-  console.log(`   - Sensor logs generated (last 7 days)`);
-  console.log(`   - Alerts generated`);
-  console.log(`   - System settings configured`);
-  console.log("");
-  console.log("🔑 API Keys untuk testing:");
-  devices.forEach(d => {
-    console.log(`   ${d.deviceId}: ${d.apiKey}`);
-  });
-  console.log("");
-  console.log("🚀 Jalankan aplikasi dengan: bun run dev");
+  console.log(`   - Sensor logs & alerts generated for 2 hours`);
   console.log("");
 
   process.exit(0);

@@ -93,6 +93,13 @@ export function DevicesView() {
     d.deviceId.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Device is considered online if status="online" AND lastSeen within 30 seconds
+  const isDeviceOnline = (device: Device) => {
+    if (device.status !== "online") return false;
+    if (!device.lastSeen) return false;
+    return (Date.now() - new Date(device.lastSeen).getTime()) < 30 * 1000;
+  };
+
   if (loading) return <DevicesSkeleton />;
 
   return (
@@ -255,16 +262,16 @@ export function DevicesView() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${device.status === "online" ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-gray-100 dark:bg-gray-800"}`}>
-                        <Cpu className={`w-5 h-5 ${device.status === "online" ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`} />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDeviceOnline(device) ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-gray-100 dark:bg-gray-800"}`}>
+                        <Cpu className={`w-5 h-5 ${isDeviceOnline(device) ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`} />
                       </div>
                       <div>
                         <h3 className="font-semibold text-sm">{device.deviceName}</h3>
                         <p className="text-xs text-muted-foreground">{device.deviceId}</p>
                       </div>
                     </div>
-                    <Badge variant={device.status === "online" ? "default" : "secondary"} className={device.status === "online" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 hover:bg-emerald-100" : ""}>
-                      {device.status === "online" ? <><Wifi className="w-3 h-3 mr-1" /> Online</> : <><WifiOff className="w-3 h-3 mr-1" /> Offline</>}
+                    <Badge variant={isDeviceOnline(device) ? "default" : "secondary"} className={isDeviceOnline(device) ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 hover:bg-emerald-100" : ""}>
+                      {isDeviceOnline(device) ? <><Wifi className="w-3 h-3 mr-1" /> Online</> : <><WifiOff className="w-3 h-3 mr-1" /> Offline</>}
                     </Badge>
                   </div>
 
@@ -712,9 +719,14 @@ function DeviceManagementModal({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${device.status === "online" ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-gray-100 dark:bg-gray-800"}`}>
-              <Cpu className={`w-5 h-5 ${device.status === "online" ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`} />
-            </div>
+            {(() => {
+              const online = device.status === "online" && !!device.lastSeen && (Date.now() - new Date(device.lastSeen).getTime()) < 30000;
+              return (
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${online ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-gray-100 dark:bg-gray-800"}`}>
+                  <Cpu className={`w-5 h-5 ${online ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`} />
+                </div>
+              );
+            })()}
             <div>
               <div className="font-bold">{device.deviceName}</div>
               <div className="text-xs text-muted-foreground font-normal">{device.deviceId}</div>
@@ -727,16 +739,21 @@ function DeviceManagementModal({
 
         <div className="space-y-4">
           {/* Status Badge */}
-          <div className="flex items-center gap-2">
-            <Badge variant={device.status === "online" ? "default" : "secondary"} className={device.status === "online" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" : ""}>
-              {device.status === "online" ? <><Wifi className="w-3 h-3 mr-1" /> Online</> : <><WifiOff className="w-3 h-3 mr-1" /> Offline</>}
-            </Badge>
-            {device.lastSeen && (
-              <span className="text-xs text-muted-foreground">
-                Last seen: {new Date(device.lastSeen).toLocaleString()}
-              </span>
-            )}
-          </div>
+          {(() => {
+            const online = device.status === "online" && !!device.lastSeen && (Date.now() - new Date(device.lastSeen).getTime()) < 30000;
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant={online ? "default" : "secondary"} className={online ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" : ""}>
+                  {online ? <><Wifi className="w-3 h-3 mr-1" /> Online</> : <><WifiOff className="w-3 h-3 mr-1" /> Offline</>}
+                </Badge>
+                {device.lastSeen && (
+                  <span className="text-xs text-muted-foreground">
+                    Last seen: {new Date(device.lastSeen).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           <Separator />
 

@@ -44,7 +44,7 @@ async function getDeviceSpecificStats(deviceId: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [totalAlertsToday, unresolvedAlerts, recentAlerts] = await Promise.all([
+  const [totalAlertsToday, unresolvedAlertsCount, recentAlerts, unresolvedAlertsData] = await Promise.all([
     db.alert.count({
       where: { deviceId, createdAt: { gte: todayStart } },
     }),
@@ -57,7 +57,16 @@ async function getDeviceSpecificStats(deviceId: string) {
       take: 5,
       include: { device: { select: { deviceName: true, deviceId: true } } },
     }),
+    db.alert.findMany({
+      where: { deviceId, resolved: false },
+      select: { severity: true },
+    }),
   ]);
+
+  let highestAlertSeverity = "info";
+  const severities = unresolvedAlertsData.map(a => a.severity);
+  if (severities.includes("critical") || severities.includes("danger")) highestAlertSeverity = "danger";
+  else if (severities.includes("warning")) highestAlertSeverity = "warning";
 
   // Recent sensor logs for this device
   const recentLogs = await db.sensorLog.findMany({
@@ -135,7 +144,8 @@ async function getDeviceSpecificStats(deviceId: string) {
       currentAvgTemp: Math.round(currentAvgTemp * 10) / 10,
       flameDetectedCount,
       totalAlertsToday,
-      unresolvedAlerts,
+      unresolvedAlerts: unresolvedAlertsCount,
+      highestAlertSeverity,
       recentLogs,
       recentAlerts,
       temperatureHistory,
@@ -179,7 +189,7 @@ async function getAllDevicesStats() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [totalAlertsToday, unresolvedAlerts, recentAlerts] = await Promise.all([
+  const [totalAlertsToday, unresolvedAlertsCount, recentAlerts, unresolvedAlertsData] = await Promise.all([
     db.alert.count({
       where: { createdAt: { gte: todayStart } },
     }),
@@ -191,7 +201,16 @@ async function getAllDevicesStats() {
       take: 5,
       include: { device: { select: { deviceName: true, deviceId: true } } },
     }),
+    db.alert.findMany({
+      where: { resolved: false },
+      select: { severity: true },
+    }),
   ]);
+
+  let highestAlertSeverity = "info";
+  const severities = unresolvedAlertsData.map(a => a.severity);
+  if (severities.includes("critical") || severities.includes("danger")) highestAlertSeverity = "danger";
+  else if (severities.includes("warning")) highestAlertSeverity = "warning";
 
   // Recent sensor logs
   const recentLogs = await db.sensorLog.findMany({
@@ -280,7 +299,8 @@ async function getAllDevicesStats() {
       currentAvgTemp: Math.round(currentAvgTemp * 10) / 10,
       flameDetectedCount,
       totalAlertsToday,
-      unresolvedAlerts,
+      unresolvedAlerts: unresolvedAlertsCount,
+      highestAlertSeverity,
       recentLogs,
       recentAlerts,
       temperatureHistory,

@@ -6,9 +6,22 @@ import { generateApiKey } from "@/lib/auth";
  * GET /api/devices
  * Fetch all devices in this deployment
  * Self-hosted single tenant - returns all devices
+ * Auto-marks devices as offline if lastSeen > 30 seconds ago
  */
 export async function GET() {
   try {
+    const OFFLINE_THRESHOLD_MS = 30 * 1000; // 30 seconds
+    const offlineCutoff = new Date(Date.now() - OFFLINE_THRESHOLD_MS);
+
+    // Mark stale devices as offline in bulk before fetching
+    await db.device.updateMany({
+      where: {
+        status: "online",
+        lastSeen: { lt: offlineCutoff },
+      },
+      data: { status: "offline" },
+    });
+
     const devices = await db.device.findMany({
       include: { _count: { select: { sensorLogs: true, alerts: true } } },
       orderBy: { createdAt: "desc" },

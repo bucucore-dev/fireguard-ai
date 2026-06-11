@@ -46,13 +46,14 @@ export interface SensorLog {
   temperature: number;
   humidity: number | null;
   flameDetected: boolean;
+  gasLevel: number | null;
   statusLevel: StatusLevel;
   createdAt: string;
   device?: Device;
 }
 
 // ===== Alert Types =====
-export type AlertType = "fire_detected" | "high_temperature" | "device_offline" | "low_humidity";
+export type AlertType = "fire_detected" | "high_temperature" | "device_offline" | "low_humidity" | "gas_leak";
 export type AlertSeverity = "info" | "warning" | "danger" | "critical";
 
 export interface Alert {
@@ -76,6 +77,7 @@ export interface DashboardStats {
   flameDetectedCount: number;
   totalAlertsToday: number;
   unresolvedAlerts: number;
+  highestAlertSeverity: AlertSeverity;
   recentLogs: SensorLog[];
   recentAlerts: Alert[];
   temperatureHistory: { time: string; temperature: number }[];

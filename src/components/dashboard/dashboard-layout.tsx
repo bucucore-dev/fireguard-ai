@@ -15,6 +15,7 @@ import { DeviceDetailView } from "@/components/devices/device-detail-view";
 import { AlertsView } from "@/components/alerts/alerts-view";
 import { SettingsView } from "@/components/settings/settings-view";
 import { AIChatbot } from "@/components/chat/ai-chatbot";
+import { EmergencyModal } from "@/components/dashboard/emergency-modal";
 
 export function DashboardLayout() {
   const { currentView } = useAppStore();
@@ -46,6 +47,9 @@ export function DashboardLayout() {
       
       {/* AI Chatbot - Floating */}
       <AIChatbot />
+      
+      {/* Global Emergency Modal */}
+      <EmergencyModal />
     </div>
   );
 }
@@ -58,23 +62,44 @@ interface AppSidebarProps {
 function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { currentView, setCurrentView } = useAppStore();
   const [unresolvedCount, setUnresolvedCount] = useState(0);
+  const [highestSeverity, setHighestSeverity] = useState("info");
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    
+    const fetchStats = async () => {
       try {
         const res = await fetch(`/api/dashboard/stats`);
         const data = await res.json();
-        if (!cancelled && data.success) setUnresolvedCount(data.data.unresolvedAlerts);
+        if (!cancelled && data.success) {
+          setUnresolvedCount(data.data.unresolvedAlerts);
+          setHighestSeverity(data.data.highestAlertSeverity || "info");
+        }
       } catch { /* silent */ }
-    })();
-    return () => { cancelled = true; };
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000); // Realtime poll every 5s
+
+    return () => { 
+      cancelled = true; 
+      clearInterval(interval);
+    };
   }, []);
+
+  // Determine badge color based on severity
+  const getBadgeColor = () => {
+    if (highestSeverity === "critical" || highestSeverity === "danger") return "bg-red-500 animate-pulse-danger";
+    if (highestSeverity === "warning") return "bg-amber-500";
+    return "bg-blue-500";
+  };
+
+  const badgeColorClass = getBadgeColor();
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "devices", label: "Devices", icon: Cpu },
-    { id: "alerts", label: "Alerts", icon: Bell, badge: unresolvedCount },
+    { id: "alerts", label: "Alerts", icon: Bell, badge: unresolvedCount, badgeColor: badgeColorClass },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -127,14 +152,14 @@ function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 <>
                   <span className="flex-1 text-left">{item.label}</span>
                   {item.badge ? (
-                    <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                    <span className={cn(`text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5`, item.badgeColor)}>
                       {item.badge}
                     </span>
                   ) : null}
                 </>
               )}
               {collapsed && item.badge ? (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                <span className={cn(`absolute -top-1 -right-1 text-white text-[8px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1`, item.badgeColor)}>
                   {item.badge}
                 </span>
               ) : null}
@@ -216,11 +241,42 @@ function TopNavbar() {
 
 function MobileMenu({ onClose }: { onClose: () => void }) {
   const { currentView, setCurrentView } = useAppStore();
+  const [unresolvedCount, setUnresolvedCount] = useState(0);
+  const [highestSeverity, setHighestSeverity] = useState("info");
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`/api/dashboard/stats`);
+        const data = await res.json();
+        if (!cancelled && data.success) {
+          setUnresolvedCount(data.data.unresolvedAlerts);
+          setHighestSeverity(data.data.highestAlertSeverity || "info");
+        }
+      } catch { /* silent */ }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+
+    return () => { 
+      cancelled = true; 
+      clearInterval(interval);
+    };
+  }, []);
+
+  const getBadgeColor = () => {
+    if (highestSeverity === "critical" || highestSeverity === "danger") return "bg-red-500 animate-pulse-danger";
+    if (highestSeverity === "warning") return "bg-amber-500";
+    return "bg-blue-500";
+  };
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "devices", label: "Devices", icon: Cpu },
-    { id: "alerts", label: "Alerts", icon: Bell },
+    { id: "alerts", label: "Alerts", icon: Bell, badge: unresolvedCount, badgeColor: getBadgeColor() },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -239,7 +295,12 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
             )}
           >
             <item.icon className="w-4 h-4" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.badge ? (
+              <span className={cn(`text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5`, item.badgeColor)}>
+                {item.badge}
+              </span>
+            ) : null}
           </button>
         ))}
       </nav>
