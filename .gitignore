@@ -101,3 +101,7 @@ prompt
 
 # Skills directory (if not needed in repo)
 # /skills/
+
+# Firmware secrets (NEVER commit these!)
+# Contains WiFi credentials, Server URL, and Device API Key
+firmware/**/config.h

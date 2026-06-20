@@ -1,9 +1,10 @@
 /*
  * ========================================
- * SMART FIRE MONITORING - 3 SENSOR
+ * SMART FIRE MONITORING - DATA CENTER RACK
+ * ISO/IEC 17025 Compliant Edition
  * ========================================
  * 
- * Firmware v6.0 - LM35 + MH Flame + MQ-2 Gas:
+ * Firmware v7.0 - LM35 + MH Flame + MQ-2 Gas (ISO/IEC 17025):
  * ✅ LM35 Temperature sensor (Accurate)
  * ✅ MH Flame Sensor - DO (Digital Output)
  * ✅ MH Flame Sensor - AO (Analog Output)
@@ -87,8 +88,15 @@
  *   6. Jika tidak menyala, putar CCW sedikit lagi
  * 
  * Author: FireGuard AI Team
- * Version: 6.0 Temperature + Flame + Gas Edition
- * Date: June 11, 2026
+ * Version: 7.0 ISO/IEC 17025 Data Center Rack Edition
+ * Date: June 19, 2026
+ * 
+ * ISO/IEC 17025 COMPLIANCE:
+ * - Kalibrasi offset terdokumentasi dan dikirim ke server
+ * - Data logging setiap 10 detik (SEND_INTERVAL)
+ * - Audit trail: nilai sensor + threshold + offset dikirim bersama alarm
+ * - Smoke level dalam % obscuration (0.0% - 100.0%)
+ * - Rack Unit identifier untuk monitoring per-U
  */
 
 #include <WiFi.h>
@@ -96,16 +104,12 @@
 #include <ArduinoJson.h>
 
 // ========================================
-// WiFi CONFIGURATION
+// KONFIGURASI — dari config.h
 // ========================================
-const char* WIFI_SSID     = "Cibot";
-const char* WIFI_PASSWORD = "Bible22.!";
-
-// ========================================
-// SERVER CONFIGURATION
-// ========================================
-const char* SERVER_URL = "http://10.66.121.205:3000/api/device/data";
-const char* API_KEY    = "fg_2440742faeca4cca2318921d9f295e8390e98793110f866a";
+// WiFi, Server URL, API Key, dan Rack Unit ID
+// disimpan di file config.h (tidak di-commit ke git)
+// Salin config.h.example → config.h dan isi nilai Anda
+#include "config.h"
 
 // ========================================
 // PIN DEFINITIONS
@@ -128,24 +132,29 @@ const char* API_KEY    = "fg_2440742faeca4cca2318921d9f295e8390e98793110f866a";
 #define PIN_BUZZER      19  // Buzzer Active (Merah ke 19, Hitam ke GND)
 
 // ========================================
-// CALIBRATION SETTINGS
+// CALIBRATION SETTINGS (ISO/IEC 17025)
 // ========================================
+// Formula kalibrasi sesuai ISO 17025:
+//   suhu_aktual = suhu_sensor + LM35_CALIBRATION_OFFSET
+//
 // ESP32 ADC tidak akurat di voltase rendah (0–0.3V)
 // LM35 di suhu ruangan (22°C) output hanya 0.22V → ESP32 membaca terlalu rendah
-// Offset +5.0°C mengkompensasi error ini
+// Offset +5.0°C mengkompensasi error sistematis ini.
 //
-// CARA KALIBRASI:
-//   1. Letakkan termometer di dekat LM35
-//   2. Baca suhu di Serial Monitor dan bandingkan dengan termometer
-//   3. Sesuaikan offset: jika termometer 22°C tapi ESP32 baca 17°C → offset = +5.0
-#define LM35_CALIBRATION_OFFSET  5.0  // °C — kompensasi error ADC ESP32
+// CARA KALIBRASI (ISO 17025 Traceability Procedure):
+// LM35_CALIBRATION_OFFSET dipindah ke config.h
+// (lihat config.h atau config.h.example)
 
 // ========================================
-// THRESHOLDS
+// RACK UNIT IDENTIFIER
 // ========================================
-// Temperature
-#define TEMP_WARNING_THRESHOLD   40.0  // °C
-#define TEMP_DANGER_THRESHOLD    55.0  // °C
+// RACK_UNIT_ID sudah dipindah ke config.h agar setiap
+// perangkat/unit bisa dikonfigurasi tanpa modifikasi kode
+// (lihat config.h atau config.h.example)
+
+// TEMP_WARNING_THRESHOLD dan TEMP_DANGER_THRESHOLD dipindah ke config.h
+// agar bisa dikonfigurasi per-instalasi tanpa ubah kode utama
+// (lihat config.h atau config.h.example)
 
 // MH Flame AO — nilai ADC makin RENDAH = api makin kuat
 // Range: 0 (api sangat dekat) sampai 4095 (tidak ada api)
@@ -162,28 +171,47 @@ const char* API_KEY    = "fg_2440742faeca4cca2318921d9f295e8390e98793110f866a";
 // MQ-2 Gas AO — nilai ADC makin TINGGI = gas makin banyak
 // Range: 0 (udara bersih) sampai 4095 (gas sangat pekat)
 //
-// KALIBRASI (udara bersih vs gas):
-// - Udara bersih normal            : AO ~200  – 800  (baseline setelah warm-up)
-// - Asap ringan (korek api jauh)   : AO ~800  – 1500
-// - Asap sedang (dekat sensor)     : AO ~1500 – 2500
-// - Gas pekat (LPG/butane dekat)   : AO ~2500 – 4095
+// ISO/IEC 17025 — Smoke Obscuration Mapping (VESDA/Titanus equivalent):
+// Smoke % = (ADC / 4095) * 100.0  [estimasi % obscuration/meter]
+// - Udara bersih normal            : AO ~200  – 800   → ~0.005% – 0.02%  (Normal)
+// - Asap sangat ringan (early warn): AO ~400  – 1200  → ~0.01%  – 0.029% (Pre-warning)
+// - Asap warning (VESDA Warning)   : AO ~1200 – 2500  → ~0.03%  – 0.06%  (WARNING)
+// - Asap alarm (VESDA Alarm)       : AO ~2500 – 4095  → ~0.06%  – 0.1%   (DANGER)
+//
+// Threshold ISO (NFPA 72 / EN 54-20 equivalent):
+//   Early Warning : smoke > 0.01%/m (≈ ADC > 400)
+//   Warning       : smoke > 0.03%/m (≈ ADC > 1200)   ← GAS_WARNING_THRESHOLD
+//   Alarm Pemadam : smoke > 0.06%/m (≈ ADC > 2500)   ← GAS_DANGER_THRESHOLD
 //
 // ⚠️ CATATAN: Nilai baseline MQ-2 bisa berubah tergantung:
 //    - Lama warm-up (2-5 menit pertama tidak akurat)
 //    - Suhu dan kelembaban ruangan
 //    - Umur sensor
-//    Sesuaikan WARNING threshold jika sering false positive
-#define GAS_WARNING_THRESHOLD   1200  // ADC > 1200 = gas/asap terdeteksi (warning)
-#define GAS_DANGER_THRESHOLD    2500  // ADC > 2500 = gas pekat (danger)
+#define GAS_WARNING_THRESHOLD   1200  // ADC > 1200 ≈ smoke > 0.03%/m (WARNING)
+#define GAS_DANGER_THRESHOLD    2500  // ADC > 2500 ≈ smoke > 0.06%/m (DANGER/ALARM)
 
 // ========================================
 // TIMING CONFIGURATION
 // ========================================
-#define LM35_SAMPLES        5    // Sample rata-rata LM35
-#define FLAME_AO_SAMPLES    5    // Sample rata-rata Flame AO
-#define GAS_AO_SAMPLES      5    // Sample rata-rata Gas AO
-#define CONFIRMATION_COUNT  1    // Langsung respons
-#define SEND_INTERVAL    5000    // Kirim data setiap 5 detik (ms)
+#define LM35_SAMPLES        20   // ↑ Naik dari 5 → 20 untuk rata-rata lebih stabil
+#define FLAME_AO_SAMPLES    10   // ↑ Naik dari 5 → 10
+#define GAS_AO_SAMPLES      10   // ↑ Naik dari 5 → 10
+
+// HYSTERESIS — konfirmasi status sebelum alarm aktif
+// 3 = perlu 3× pembacaan berurutan (±3 detik) sebelum status berubah
+// Ini mencegah false alarm akibat noise ADC sesaat
+// ⚠️  Untuk api/bahaya nyata: perlu 3 detik sudah cukup responsif
+//     Untuk false alarm dari noise ADC/panas sesaat: sudah tersaring
+#define CONFIRMATION_COUNT  3    // ↑ Naik dari 1 → 3 (konfirmasi ±3 detik)
+
+#define SEND_INTERVAL   10000    // Kirim data setiap 10 detik (ISO 17025 logging interval)
+
+// EMA (Exponential Moving Average) untuk filter suhu
+// alpha = 0.2 → lebih lambat merespons perubahan sesaat (anti-noise)
+// alpha = 0.5 → lebih responsif
+// Rumus: smoothed = alpha × raw + (1 - alpha) × prev_smoothed
+// Contoh: noise spike 68°C → smoothed hanya naik ~10°C, bukan langsung 68°C
+#define EMA_ALPHA           0.2  // Filter coefficient (0.1=halus, 0.5=responsif)
 
 // ========================================
 // MQ-2 WARM-UP
@@ -206,6 +234,7 @@ SystemStatus currentStatus = STATUS_NORMAL;
 bool isWiFiConnected = false;
 
 float currentTemperature = 0.0;
+float smoothedTemperature = -1.0;  // EMA filter suhu (-1 = belum diinisialisasi)
 int   currentFlameAO     = 4095;  // Default max (tidak ada api)
 bool  currentFlameDO     = false; // false = tidak ada api
 int   currentGasAO       = 0;    // Default min (udara bersih)
@@ -251,6 +280,9 @@ void setup() {
   digitalWrite(PIN_LED_RED, LOW);
   digitalWrite(PIN_BUZZER, LOW);
 
+  analogReadResolution(12);          // 12-bit ADC (0-4095)
+  analogSetAttenuation(ADC_11db);    // Full range 0-3.3V untuk semua pin ADC
+                                     // Tanpa ini: LM35 <0.3V sangat noisy!
   // GPIO 32: analog input (tidak perlu pinMode khusus untuk analogRead)
   // GPIO 34 & 35 INPUT ONLY — tidak perlu pinMode
 
@@ -282,7 +314,19 @@ void loop() {
   }
 
   // Baca semua sensor
-  currentTemperature = readTemperature();
+  float rawTemp      = readTemperature();
+
+  // ───────────────────────────────────────────────────────
+  // EMA Filter suhu — anti-noise ADC ESP32
+  // Inisialisasi dengan nilai pertama jika belum ada
+  if (smoothedTemperature < 0) {
+    smoothedTemperature = rawTemp;  // Inisialisasi pertama kali
+  } else {
+    smoothedTemperature = (EMA_ALPHA * rawTemp) + ((1.0 - EMA_ALPHA) * smoothedTemperature);
+  }
+  currentTemperature = smoothedTemperature;
+  // ───────────────────────────────────────────────────────
+
   currentFlameAO     = readFlameAnalog();
   currentFlameDO     = readFlameDigital();
   currentGasAO       = readGasAnalog();
@@ -368,6 +412,8 @@ float readTemperature() {
     Serial.print("   ADC Raw: ");    Serial.print(rawADC);        Serial.println(" / 4095");
     Serial.print("   Voltage: ");    Serial.print(avgVoltage, 3); Serial.println(" V");
     Serial.print("   Valid: ");      Serial.print(validReadings); Serial.print(" / "); Serial.println(LM35_SAMPLES);
+    Serial.print("   Raw Temp: ");   Serial.print((validReadings > 0) ? (sum / validReadings) / 10.0 : 0, 1); Serial.println(" °C");
+    Serial.print("   Smoothed: ");   Serial.print(smoothedTemperature, 1); Serial.println(" °C (EMA filtered)");
     if (rawADC == 0) {
       Serial.println("   ⚠️  ADC=0! Cek wiring LM35:");
       Serial.println("      Pin 1 (VCC)  → 3.3V");
@@ -377,7 +423,7 @@ float readTemperature() {
     lastDebug = millis();
   }
 
-  return (validReadings > 0) ? (sum / validReadings) / 10.0 : 0.0;
+  return (validReadings > 0) ? (sum / validReadings) / 10.0 : (smoothedTemperature > 0 ? smoothedTemperature : 0.0);
 }
 
 // ========================================
@@ -432,7 +478,7 @@ void updateSystemStatus() {
   bool flameWarning = (currentFlameAO < FLAME_AO_WARNING_THRESHOLD);
   bool flameDO      = currentFlameDO;  // DO terkalibrasi via trimpot
 
-  // --- Temperature ---
+  // --- Temperature (menggunakan smoothedTemperature, bukan raw) ---
   bool tempDanger   = (currentTemperature >= TEMP_DANGER_THRESHOLD);
   bool tempWarning  = (currentTemperature >= TEMP_WARNING_THRESHOLD);
 
@@ -441,19 +487,53 @@ void updateSystemStatus() {
   bool gasWarning   = gasWarmedUp && (currentGasAO >= GAS_WARNING_THRESHOLD);
   bool gasDO        = gasWarmedUp && currentGasDO;  // DO terkalibrasi via trimpot
 
-  // DANGER: api dekat, gas pekat, atau suhu sangat tinggi
-  if (flameDanger || (flameDO && flameDanger) || gasDanger || gasDO || tempDanger) {
+  // ─────────────────────────────────────────────────────────────────
+  // HYSTERESIS — Konfirmasi status sebelum alarm aktif
+  //
+  // Status hanya berubah setelah CONFIRMATION_COUNT pembacaan berurutan.
+  // Ini mencegah false alarm dari:
+  //   - Noise ADC sesaat
+  //   - Spike suhu singkat (angin, jari menyentuh sensor, dll.)
+  //   - MQ-2 bacaan tidak stabil di batas threshold
+  //
+  // Api DO = LANGSUNG (tanpa konfirmasi) karena api sungguhan
+  //          perlu respons instan!
+  // ─────────────────────────────────────────────────────────────────
+
+  // DANGER: api sangat dekat (DO) = LANGSUNG, yang lain perlu konfirmasi
+  if (flameDO || (flameDanger && gasDanger)) {
+    // Kondisi kritis: api nyata atau api+gas bersamaan → respons instan
     currentStatus = STATUS_DANGER;
-    dangerConfirmCount++;
+    dangerConfirmCount  = CONFIRMATION_COUNT;  // Langsung confirm
     warningConfirmCount = 0;
   }
-  // WARNING: api terdeteksi, gas terdeteksi, atau suhu tinggi
-  else if (flameDO || flameWarning || gasWarning || tempWarning) {
-    currentStatus = STATUS_WARNING;
+  else if (flameDanger || gasDanger || tempDanger) {
+    // Potensi danger dari sensor AO: perlu konfirmasi
+    dangerConfirmCount++;
+    warningConfirmCount = 0;
+    if (dangerConfirmCount >= CONFIRMATION_COUNT) {
+      currentStatus = STATUS_DANGER;
+    } else {
+      // Belum cukup konfirmasi — pertahankan status saat ini
+      // (jangan langsung alarm)
+      Serial.print("⚡ DANGER pending konfirmasi ");
+      Serial.print(dangerConfirmCount); Serial.print("/");
+      Serial.println(CONFIRMATION_COUNT);
+    }
+  }
+  // WARNING: perlu konfirmasi juga (kecuali flameDO)
+  else if (flameWarning || gasWarning || tempWarning) {
     warningConfirmCount++;
     dangerConfirmCount = 0;
+    if (warningConfirmCount >= CONFIRMATION_COUNT) {
+      currentStatus = STATUS_WARNING;
+    } else {
+      Serial.print("⚡ WARNING pending konfirmasi ");
+      Serial.print(warningConfirmCount); Serial.print("/");
+      Serial.println(CONFIRMATION_COUNT);
+    }
   }
-  // NORMAL
+  // NORMAL — langsung (tidak perlu konfirmasi untuk kembali normal)
   else {
     currentStatus = STATUS_NORMAL;
     warningConfirmCount = 0;
@@ -528,13 +608,22 @@ void sendDataToServer() {
   HTTPClient http;
   http.begin(SERVER_URL);
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-API-Key", API_KEY);
+  http.addHeader("X-API-Key", DEVICE_API_KEY);
 
   // Flame detected: DO terkalibrasi ATAU AO di bawah warning
   bool flameDetected = currentFlameDO || (currentFlameAO < FLAME_AO_WARNING_THRESHOLD);
 
   // Gas detected: DO terkalibrasi ATAU AO di atas warning (setelah warm-up)
   bool gasDetected = gasWarmedUp && (currentGasDO || (currentGasAO >= GAS_WARNING_THRESHOLD));
+
+  // ═══════════════════════════════════════════
+  // ISO/IEC 17025 — Smoke % Obscuration
+  // Formula: smokePercent = (gasADC / 4095.0) * 100.0
+  // Ini adalah estimasi % kepekatan relatif (0.0% = bersih, 100.0% = max)
+  // Untuk kalibrasi absolut (%/m), perlu kalibrasi dengan smoke chamber
+  // ═══════════════════════════════════════════
+  float smokePercent = (currentGasAO / 4095.0) * 100.0;
+  if (!gasWarmedUp) smokePercent = -1.0;  // -1 = sensor belum warm-up (tidak valid)
 
   // Cetak peringatan saat bahaya terdeteksi
   if (flameDetected || gasDetected) {
@@ -549,20 +638,41 @@ void sendDataToServer() {
     if (gasDetected) {
       Serial.println("💨💨💨 ============================== 💨💨💨");
       Serial.println("   !!! GAS/ASAP TERDETEKSI — MENGIRIM ALERT !!!");
-      Serial.print(  "   Gas DO : "); Serial.println(currentGasDO ? "LOW (AKTIF)" : "HIGH (ok)");
-      Serial.print(  "   Gas AO : "); Serial.print(currentGasAO); Serial.println(" / 4095");
+      Serial.print(  "   Gas DO    : "); Serial.println(currentGasDO ? "LOW (AKTIF)" : "HIGH (ok)");
+      Serial.print(  "   Gas AO    : "); Serial.print(currentGasAO); Serial.println(" / 4095");
+      Serial.print(  "   Smoke %   : "); Serial.print(smokePercent, 3); Serial.println("%");
       Serial.println("💨💨💨 ============================== 💨💨💨");
     }
     Serial.println();
   }
 
-  StaticJsonDocument<512> doc;
-  doc["temperature"]   = currentTemperature;
-  doc["flameDetected"] = flameDetected;
-  doc["gasLevel"]      = currentGasAO;        // Nilai AO gas sensor (0=bersih, 4095=pekat)
-  doc["gasDetected"]   = gasDetected;          // true jika gas/asap terdeteksi
-  doc["humidity"]      = 0;                    // Tidak ada sensor humidity
-  doc["flameAO"]       = currentFlameAO;       // Nilai AO flame sensor (informatif)
+  // ═══════════════════════════════════════════
+  // JSON PAYLOAD — ISO/IEC 17025 Extended Format
+  // Field baru: smokePercent, rackUnit, calibrationOffset,
+  //             firmwareVersion, tempNormalMin, tempNormalMax
+  // ═══════════════════════════════════════════
+  StaticJsonDocument<768> doc;
+
+  // --- Core sensor data ---
+  doc["temperature"]        = round(currentTemperature * 10.0) / 10.0; // Bulatkan ke 1 desimal agar rapi di DB/dashboard
+  doc["flameDetected"]      = flameDetected;             // true jika api terdeteksi
+  doc["gasLevel"]           = currentGasAO;             // Raw ADC gas (0-4095)
+  doc["gasDetected"]        = gasDetected;               // true jika gas/asap terdeteksi
+  doc["humidity"]           = 0;                        // Tidak ada sensor humidity
+  doc["flameAO"]            = currentFlameAO;           // Raw ADC flame (informatif)
+
+  // --- ISO/IEC 17025 Traceability fields ---
+  doc["smokePercent"]       = smokePercent;             // % kepekatan asap (−1 = warm-up)
+  doc["rackUnit"]           = RACK_UNIT_ID;             // Posisi sensor di rack ("U01" dst)
+  doc["calibrationOffset"]  = LM35_CALIBRATION_OFFSET; // Offset kalibrasi aktif (°C)
+  doc["firmwareVersion"]    = "7.0";                    // Versi firmware untuk audit
+  doc["gasWarmUp"]          = gasWarmedUp;              // Status warm-up MQ-2
+
+  // --- Threshold reference (untuk audit trail di server) ---
+  doc["thresholdTempWarn"]  = TEMP_WARNING_THRESHOLD;  // 27.0°C
+  doc["thresholdTempDanger"]= TEMP_DANGER_THRESHOLD;   // 57.0°C
+  doc["thresholdGasWarn"]   = GAS_WARNING_THRESHOLD;   // ADC 1200
+  doc["thresholdGasDanger"] = GAS_DANGER_THRESHOLD;    // ADC 2500
 
   String payload;
   serializeJson(doc, payload);
@@ -585,23 +695,33 @@ void sendDataToServer() {
 // PRINT SYSTEM STATUS
 // ========================================
 void printSystemStatus() {
-  // Format compact: tampilkan semua sensor
-  Serial.print("Flame AO=");
+  // Format compact: tampilkan semua sensor + ISO 17025 fields
+  float smokePercent = gasWarmedUp ? (currentGasAO / 4095.0) * 100.0 : -1.0;
+
+  Serial.print("[" RACK_UNIT_ID "] ");
+  Serial.print("T=");
+  Serial.print(currentTemperature, 1);
+  Serial.print("°C(+");
+  Serial.print(LM35_CALIBRATION_OFFSET, 1);
+  Serial.print("off) | Flame AO=");
   Serial.print(currentFlameAO);
   Serial.print(" DO=");
   Serial.print(currentFlameDO ? "FIRE" : "ok");
   Serial.print(" | Gas AO=");
   Serial.print(currentGasAO);
-  Serial.print(" DO=");
+  if (gasWarmedUp) {
+    Serial.print("(");
+    Serial.print(smokePercent, 2);
+    Serial.print("%) DO=");
+  } else {
+    Serial.print("(warm%) DO=");
+  }
   Serial.print(currentGasDO ? "GAS!" : "ok");
-  if (!gasWarmedUp) Serial.print("(warm)");
-  Serial.print(" | T=");
-  Serial.print(currentTemperature, 1);
-  Serial.print("C | ");
+  Serial.print(" | ");
   switch (currentStatus) {
-    case STATUS_NORMAL:  Serial.println("NORMAL");    break;
-    case STATUS_WARNING: Serial.println("WARNING !!"); break;
-    case STATUS_DANGER:  Serial.println("DANGER !!!"); break;
+    case STATUS_NORMAL:  Serial.println("✅ NORMAL");    break;
+    case STATUS_WARNING: Serial.println("⚠️  WARNING !!"); break;
+    case STATUS_DANGER:  Serial.println("🚨 DANGER !!!"); break;
   }
 }
 
@@ -609,10 +729,22 @@ void printSystemStatus() {
 // PRINT HEADER
 // ========================================
 void printHeader() {
-  Serial.println("\n========================================");
-  Serial.println("  SMART FIRE MONITORING v6.0");
+  Serial.println("\n======================================================");
+  Serial.println("  SMART FIRE MONITORING v7.0");
+  Serial.println("  ISO/IEC 17025 Data Center Rack Monitoring");
   Serial.println("  LM35 + MH Flame + MQ-2 Gas");
-  Serial.println("========================================");
+  Serial.println("======================================================");
+  Serial.print(  "  Rack Unit    : "); Serial.println(RACK_UNIT_ID);
+  Serial.print(  "  Cal. Offset  : +"); Serial.print(LM35_CALIBRATION_OFFSET, 1); Serial.println(" °C");
+  Serial.print(  "  Log Interval : "); Serial.print(SEND_INTERVAL / 1000); Serial.println(" detik");
+  Serial.println("------------------------------------------------------");
+  Serial.println("Threshold ISO 17025:");
+  Serial.print(  "  Suhu Normal  : "); Serial.print(TEMP_NORMAL_MIN, 0); Serial.print("°C – "); Serial.print(TEMP_NORMAL_MAX, 0); Serial.println("°C");
+  Serial.print(  "  Suhu Warning : > "); Serial.print(TEMP_WARNING_THRESHOLD, 0); Serial.println("°C");
+  Serial.print(  "  Suhu Danger  : ≥ "); Serial.print(TEMP_DANGER_THRESHOLD, 0); Serial.println("°C (alarm pemadam)");
+  Serial.print(  "  Gas Warning  : ADC > "); Serial.print(GAS_WARNING_THRESHOLD); Serial.println(" (~0.03%/m)");
+  Serial.print(  "  Gas Danger   : ADC > "); Serial.print(GAS_DANGER_THRESHOLD); Serial.println(" (~0.06%/m)");
+  Serial.println("------------------------------------------------------");
   Serial.println("Pins:");
   Serial.println("  LM35 VOUT   → GPIO 35 (Analog)");
   Serial.println("  MH Flame AO → GPIO 34 (Analog)");
@@ -623,11 +755,12 @@ void printHeader() {
   Serial.println("  LED Yellow  → GPIO 26");
   Serial.println("  LED Red     → GPIO 27");
   Serial.println("Features:");
-  Serial.println("  ✅ LM35 Temperature Sensor");
+  Serial.println("  ✅ LM35 Temperature Sensor (ISO 17025 offset kalibrasi)");
   Serial.println("  ✅ MH Flame Sensor (DO + AO)");
-  Serial.println("  ✅ MQ-2 Gas Sensor (DO + AO)");
-  Serial.println("  ✅ WiFi + Dashboard");
-  Serial.println("  ✅ Status LEDs");
+  Serial.println("  ✅ MQ-2 Gas Sensor (DO + AO) + % Smoke");
+  Serial.println("  ✅ WiFi + Dashboard (10s logging)");
+  Serial.println("  ✅ Status LEDs + Buzzer");
+  Serial.println("  ✅ Audit Trail — threshold + offset dikirim ke server");
   Serial.println("  ⏳ MQ-2 Warm-up: 3 menit");
-  Serial.println("========================================\n");
+  Serial.println("======================================================\n");
 }

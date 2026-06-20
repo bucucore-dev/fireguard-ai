@@ -17,7 +17,9 @@
     "docker:build": "docker build -t fireguard-ai .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "logger:start": "bun run mini-services/periodic-logger.ts",
+    "logger:dev": "bun --env-file=.env run mini-services/periodic-logger.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

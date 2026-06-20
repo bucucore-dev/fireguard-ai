@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useAppStore } from "@/stores/app-store";
 import { TemperatureChart } from "@/components/charts/temperature-chart";
+import { SmokeChart } from "@/components/charts/smoke-chart";
 import { AlertChart } from "@/components/charts/alert-chart";
 import { DeviceActivityChart } from "@/components/charts/device-activity-chart";
 import { DeviceMap } from "@/components/maps/device-map";
@@ -88,42 +89,80 @@ export function DashboardView() {
     );
   }
 
-  const tempColor = stats.currentAvgTemp >= 60 ? "text-red-600 dark:text-red-400" : stats.currentAvgTemp >= 40 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400";
-  const tempBg = stats.currentAvgTemp >= 60 ? "bg-red-50 dark:bg-red-950/20" : stats.currentAvgTemp >= 40 ? "bg-amber-50 dark:bg-amber-950/20" : "bg-emerald-50 dark:bg-emerald-950/20";
+  // ISO/IEC 17025 threshold colors untuk suhu
+  const TEMP_WARNING = stats.isoThresholds?.tempWarning ?? 27;
+  const TEMP_DANGER  = stats.isoThresholds?.tempDanger  ?? 57;
+  const tempColor = stats.currentAvgTemp >= TEMP_DANGER
+    ? "text-red-600 dark:text-red-400"
+    : stats.currentAvgTemp > TEMP_WARNING
+    ? "text-amber-600 dark:text-amber-400"
+    : "text-emerald-600 dark:text-emerald-400";
+  const tempBg = stats.currentAvgTemp >= TEMP_DANGER
+    ? "bg-red-50 dark:bg-red-950/20"
+    : stats.currentAvgTemp > TEMP_WARNING
+    ? "bg-amber-50 dark:bg-amber-950/20"
+    : "bg-emerald-50 dark:bg-emerald-950/20";
+
+  // % Smoke color
+  const smokeVal = stats.currentSmokePercent ?? null;
+  const SMOKE_WARN_PCT = (1200 / 4095) * 100;
+  const SMOKE_DANG_PCT = (2500 / 4095) * 100;
+  const smokeColor = smokeVal === null
+    ? "text-muted-foreground"
+    : smokeVal >= SMOKE_DANG_PCT
+    ? "text-red-600 dark:text-red-400"
+    : smokeVal >= SMOKE_WARN_PCT
+    ? "text-amber-600 dark:text-amber-400"
+    : "text-emerald-600 dark:text-emerald-400";
+  const smokeBg = smokeVal === null
+    ? "bg-muted/40"
+    : smokeVal >= SMOKE_DANG_PCT
+    ? "bg-red-50 dark:bg-red-950/20"
+    : smokeVal >= SMOKE_WARN_PCT
+    ? "bg-amber-50 dark:bg-amber-950/20"
+    : "bg-emerald-50 dark:bg-emerald-950/20";
 
   const kpiCards = [
     {
-      title: "Avg Temperature",
+      title: "Suhu Inlet Rack",
       value: `${stats.currentAvgTemp}°C`,
       icon: Thermometer,
       color: tempColor,
       bg: tempBg,
-      subtitle: "Across all devices",
+      subtitle: stats.currentAvgTemp > TEMP_WARNING
+        ? `⚠️ Di atas batas normal (>${TEMP_WARNING}°C)`
+        : `✅ Normal (18–${TEMP_WARNING}°C)`,
     },
     {
-      title: "Flame Detection",
-      value: stats.flameDetectedCount > 0 ? `${stats.flameDetectedCount} Active` : "Clear",
+      title: "Deteksi Api",
+      value: stats.flameDetectedCount > 0 ? `${stats.flameDetectedCount} Aktif` : "Aman",
       icon: Flame,
       color: stats.flameDetectedCount > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
       bg: stats.flameDetectedCount > 0 ? "bg-red-50 dark:bg-red-950/20" : "bg-emerald-50 dark:bg-emerald-950/20",
-      subtitle: stats.flameDetectedCount > 0 ? "Immediate action required" : "No flames detected",
+      subtitle: stats.flameDetectedCount > 0 ? "Tindakan segera diperlukan" : "Tidak ada api terdeteksi",
       pulse: stats.flameDetectedCount > 0,
     },
     {
-      title: "Device Status",
+      title: "Level Asap (MQ-2)",
+      value: smokeVal !== null ? `${smokeVal.toFixed(1)}%` : "Warm-up…",
+      icon: Wind,
+      color: smokeColor,
+      bg: smokeBg,
+      subtitle: smokeVal === null
+        ? "Sensor sedang warm-up (~3 menit)"
+        : smokeVal >= SMOKE_DANG_PCT
+        ? `🚨 Alarm pemadam (>0.06%/m)`
+        : smokeVal >= SMOKE_WARN_PCT
+        ? `⚠️ Asap terdeteksi (>0.03%/m)`
+        : `✅ Udara bersih`,
+    },
+    {
+      title: "Status Device",
       value: `${stats.onlineDevices}/${stats.totalDevices}`,
       icon: stats.onlineDevices > 0 ? Wifi : WifiOff,
       color: stats.onlineDevices === stats.totalDevices ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
       bg: stats.onlineDevices === stats.totalDevices ? "bg-emerald-50 dark:bg-emerald-950/20" : "bg-amber-50 dark:bg-amber-950/20",
       subtitle: `${stats.offlineDevices} device${stats.offlineDevices !== 1 ? "s" : ""} offline`,
-    },
-    {
-      title: "Alerts Today",
-      value: String(stats.totalAlertsToday),
-      icon: AlertTriangle,
-      color: stats.totalAlertsToday > 10 ? "text-red-600 dark:text-red-400" : stats.totalAlertsToday > 5 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400",
-      bg: stats.totalAlertsToday > 10 ? "bg-red-50 dark:bg-red-950/20" : stats.totalAlertsToday > 5 ? "bg-amber-50 dark:bg-amber-950/20" : "bg-emerald-50 dark:bg-emerald-950/20",
-      subtitle: `${stats.unresolvedAlerts} unresolved`,
     },
   ];
 
@@ -248,16 +287,39 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Temperature History - Full Width Below Map */}
+      {/* Temperature History - Full Width */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
-            Temperature History ({timeRange === "24h" ? "24 Hours" : timeRange === "7d" ? "7 Days" : "30 Days"})
+            Tren Suhu Inlet ({timeRange === "24h" ? "24 Jam" : timeRange === "7d" ? "7 Hari" : "30 Hari"})
+            <Badge variant="outline" className="text-[10px] ml-auto font-normal">
+              ISO 17025 · Warning &gt;{TEMP_WARNING}°C · Danger ≥{TEMP_DANGER}°C
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <TemperatureChart data={stats.temperatureHistory} />
+          <TemperatureChart
+            data={stats.temperatureHistory}
+            tempWarning={TEMP_WARNING}
+            tempDanger={TEMP_DANGER}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Smoke History - Full Width */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Wind className="w-4 h-4 text-muted-foreground" />
+            Tren Asap / Partikel MQ-2 ({timeRange === "24h" ? "24 Jam" : timeRange === "7d" ? "7 Hari" : "30 Hari"})
+            <Badge variant="outline" className="text-[10px] ml-auto font-normal">
+              ISO 17025 · Warning ~0.03%/m · Alarm ~0.06%/m
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SmokeChart data={stats.temperatureHistory} />
         </CardContent>
       </Card>
 
@@ -358,10 +420,17 @@ function DeviceSpecificView({
     );
   }
 
+  // ISO 17025 thresholds untuk device view
+  const TEMP_WARNING = stats.isoThresholds?.tempWarning ?? 27;
+  const TEMP_DANGER  = stats.isoThresholds?.tempDanger  ?? 57;
+  const SMOKE_WARN_PCT = (1200 / 4095) * 100;
+  const SMOKE_DANG_PCT = (2500 / 4095) * 100;
+
   const latestLog = stats.recentLogs[0];
   const tempChartData = [...stats.recentLogs].reverse().map((log: SensorLog) => ({
     time: new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     temperature: log.temperature,
+    smokePercent: log.smokePercent ?? undefined,
   }));
 
   const severityVariant = (s: string) => {
@@ -477,10 +546,12 @@ function DeviceSpecificView({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <Thermometer className={`w-8 h-8 ${latestLog.temperature >= 60 ? "text-red-500" : latestLog.temperature >= 40 ? "text-amber-500" : "text-emerald-500"}`} />
+                <Thermometer className={`w-8 h-8 ${latestLog.temperature >= TEMP_DANGER ? "text-red-500" : latestLog.temperature > TEMP_WARNING ? "text-amber-500" : "text-emerald-500"}`} />
                 <div>
                   <p className="text-2xl font-bold">{latestLog.temperature}°C</p>
-                  <p className="text-xs text-muted-foreground">Temperature</p>
+                  <p className="text-xs text-muted-foreground">
+                    {latestLog.temperature >= TEMP_DANGER ? "🚨 Danger ≥57°C" : latestLog.temperature > TEMP_WARNING ? `⚠️ Warning >${TEMP_WARNING}°C` : `✅ Normal (18–${TEMP_WARNING}°C)`}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -495,10 +566,21 @@ function DeviceSpecificView({
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-3">
-                <Wind className={`w-8 h-8 ${(latestLog.gasLevel ?? 0) >= 2500 ? "text-red-500 animate-pulse-danger" : (latestLog.gasLevel ?? 0) >= 1200 ? "text-amber-500" : "text-emerald-500"}`} />
+                <Wind className={`w-8 h-8 ${
+                  (latestLog.smokePercent ?? -1) >= SMOKE_DANG_PCT
+                    ? "text-red-500 animate-pulse-danger"
+                    : (latestLog.smokePercent ?? -1) >= SMOKE_WARN_PCT
+                    ? "text-amber-500"
+                    : "text-emerald-500"
+                }`} />
                 <div>
-                  <p className="text-2xl font-bold">{latestLog.gasLevel ?? 0}<span className="text-sm font-normal text-muted-foreground">/4095</span></p>
-                  <p className="text-xs text-muted-foreground">Gas Level (MQ-2)</p>
+                  <p className="text-2xl font-bold">
+                    {latestLog.smokePercent !== null && (latestLog.smokePercent ?? -1) >= 0
+                      ? <>{latestLog.smokePercent!.toFixed(1)}<span className="text-sm font-normal text-muted-foreground">%</span></>
+                      : <span className="text-sm font-normal text-muted-foreground">Warm-up…</span>
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">Asap MQ-2 (%)</p>
                 </div>
               </CardContent>
             </Card>
@@ -548,15 +630,23 @@ function DeviceSpecificView({
                 ) : (
                   <div className="space-y-1">
                     {stats.recentLogs.map((log: SensorLog) => (
-                      <div key={log.id} className="flex items-center justify-between py-2 px-2 text-sm border-b last:border-0">
-                        <div className="flex items-center gap-3">
+                      <div key={log.id} className={`flex items-center justify-between py-2 px-2 text-sm border-b last:border-0 ${log.dataSource === "cron" ? "bg-blue-50/40 dark:bg-blue-950/10" : ""}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline" className={`text-[10px] ${log.statusLevel === "danger" ? "border-red-300 text-red-600 dark:text-red-400" : log.statusLevel === "warning" ? "border-amber-300 text-amber-600 dark:text-amber-400" : "border-emerald-300 text-emerald-600 dark:text-emerald-400"}`}>
                             {log.statusLevel}
                           </Badge>
+                          {log.dataSource === "cron" && (
+                            <Badge variant="secondary" className="text-[9px] h-3.5 px-1 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                              📅 auto-log
+                            </Badge>
+                          )}
                           <span>{log.temperature}°C</span>
                           {log.flameDetected && <Flame className="w-3.5 h-3.5 text-red-500" />}
-                          {(log.gasLevel ?? 0) >= 1200 && <Wind className="w-3.5 h-3.5 text-amber-500" />}
-                          <span className="text-muted-foreground text-xs">Gas:{log.gasLevel ?? 0}</span>
+                          {log.smokePercent !== null && (log.smokePercent ?? -1) >= 0
+                            ? <span className="text-muted-foreground text-xs">💨{log.smokePercent!.toFixed(1)}%</span>
+                            : <span className="text-muted-foreground text-xs">Gas:{log.gasLevel ?? 0}</span>
+                          }
+                          {log.rackUnit && <span className="text-muted-foreground text-[10px]">[{log.rackUnit}]</span>}
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                           {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -571,19 +661,42 @@ function DeviceSpecificView({
         </div>
       </div>
 
-      {/* Temperature Chart - Full Width Below Map */}
+      {/* Temperature + Smoke Charts */}
       {tempChartData.length > 1 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              Temperature History
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TemperatureChart data={tempChartData} />
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                Tren Suhu Inlet
+                <Badge variant="outline" className="text-[10px] ml-auto font-normal">
+                  ISO 17025 · Warning &gt;{TEMP_WARNING}°C · Danger ≥{TEMP_DANGER}°C
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TemperatureChart
+                data={tempChartData}
+                tempWarning={TEMP_WARNING}
+                tempDanger={TEMP_DANGER}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Wind className="w-4 h-4 text-muted-foreground" />
+                Tren Asap / Partikel MQ-2
+                <Badge variant="outline" className="text-[10px] ml-auto font-normal">
+                  ISO 17025 · Warning ~0.03%/m · Alarm ~0.06%/m
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SmokeChart data={tempChartData} />
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Bottom Row: Recent Alerts - Full Width */}

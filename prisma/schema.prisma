@@ -35,14 +35,22 @@ model Device {
 
 // Model 2: SensorLog - Data sensor real-time
 model SensorLog {
-  id            String   @id @default(cuid())
-  deviceId      String
-  temperature   Float    // Suhu dalam Celsius
-  humidity      Float?   // Kelembaban dalam persen (%)
-  flameDetected Boolean  @default(false) // Deteksi api: true/false
-  gasLevel      Float?   // Level gas (opsional, jika ada sensor gas)
-  statusLevel   String   @default("normal") // Status: "normal" | "warning" | "danger" | "critical"
-  createdAt     DateTime @default(now())
+  id                String   @id @default(cuid())
+  deviceId          String
+  temperature       Float    // Suhu dalam Celsius (sudah termasuk offset kalibrasi)
+  humidity          Float?   // Kelembaban dalam persen (%)
+  flameDetected     Boolean  @default(false) // Deteksi api: true/false
+  gasLevel          Float?   // Level gas raw ADC (0-4095)
+  statusLevel       String   @default("normal") // Status: "normal" | "warning" | "danger" | "critical"
+  createdAt         DateTime @default(now())
+
+  // ISO/IEC 17025 Traceability Fields
+  smokePercent      Float?   // % kepekatan asap: (gasADC/4095)*100, -1 = warm-up
+  flameAO           Int?     // Raw ADC nilai MH Flame sensor (0-4095)
+  calibrationOffset Float?   // Offset kalibrasi LM35 yang aktif saat pengukuran (ISO 17025)
+  rackUnit          String?  // Posisi rack unit sensor ("U01" - "U42")
+  firmwareVersion   String?  // Versi firmware saat data dikirim
+  dataSource        String   @default("device") // "device" = dari ESP32, "cron" = periodic normal log
 
   // Relasi
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -50,18 +58,26 @@ model SensorLog {
   @@index([deviceId])
   @@index([createdAt])
   @@index([statusLevel])
+  @@index([rackUnit])
 }
 
-// Model 3: Alert - Riwayat peringatan/notifikasi
+// Model 3: Alert - Riwayat peringatan/notifikasi + Audit Trail ISO 17025
 model Alert {
-  id         String    @id @default(cuid())
-  deviceId   String
-  alertType  String    // Tipe: "fire_detected" | "high_temperature" | "device_offline" | "low_humidity" | "gas_leak"
-  message    String    // Pesan alert
-  severity   String    @default("warning") // Tingkat: "info" | "warning" | "danger" | "critical"
-  resolved   Boolean   @default(false) // Sudah ditangani atau belum
-  resolvedAt DateTime? // Waktu ditandai selesai
-  createdAt  DateTime  @default(now())
+  id                String    @id @default(cuid())
+  deviceId          String
+  alertType         String    // Tipe: "fire_detected" | "high_temperature" | "device_offline" | "low_humidity" | "gas_leak" | "smoke_warning"
+  message           String    // Pesan alert
+  severity          String    @default("warning") // Tingkat: "info" | "warning" | "danger" | "critical"
+  resolved          Boolean   @default(false) // Sudah ditangani atau belum
+  resolvedAt        DateTime? // Waktu ditandai selesai
+  createdAt         DateTime  @default(now())
+
+  // ISO/IEC 17025 Audit Trail Fields
+  sensorValue       Float?    // Nilai sensor aktual saat alarm terpicu
+  thresholdValue    Float?    // Nilai threshold yang dilanggar
+  calibrationOffset Float?    // Offset kalibrasi aktif saat alarm (untuk traceability)
+  rackUnit          String?   // Rack unit yang memicu alarm
+  sensorType        String?   // Jenis sensor: "temperature" | "smoke" | "flame"
 
   // Relasi
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -70,6 +86,8 @@ model Alert {
   @@index([severity])
   @@index([resolved])
   @@index([createdAt])
+  @@index([rackUnit])
+  @@index([sensorType])
 }
 
 // Model 4: SystemSettings - Konfigurasi sistem (opsional)

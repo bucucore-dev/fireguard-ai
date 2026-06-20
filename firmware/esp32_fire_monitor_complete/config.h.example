@@ -1,0 +1,71 @@
+/*
+ * ========================================
+ * config.h.example — TEMPLATE KONFIGURASI
+ * ========================================
+ *
+ * Salin file ini menjadi config.h, lalu isi nilai yang sesuai.
+ * File config.h TIDAK akan masuk git (sudah di-gitignore).
+ *
+ * CARA SETUP:
+ *   1. cp config.h.example config.h
+ *   2. Edit config.h sesuai lingkungan Anda
+ *   3. Compile dan upload ke ESP32
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ========================================
+// WiFi CONFIGURATION
+// ========================================
+#define WIFI_SSID       "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD   "YOUR_WIFI_PASSWORD"
+
+// ========================================
+// SERVER CONFIGURATION
+// ========================================
+#define SERVER_URL      "http://YOUR_SERVER_IP:3000/api/device/data"
+#define DEVICE_API_KEY  "fg_YOUR_DEVICE_API_KEY_HERE"
+
+// ========================================
+// RACK UNIT IDENTIFIER
+// ========================================
+#define RACK_UNIT_ID    "U01"
+
+// ========================================
+// CALIBRATION OFFSET (ISO 17025)
+// ========================================
+// Offset untuk mengkompensasi error sistematis LM35 + ESP32 ADC.
+// Cara mengukur: bandingkan "Raw Temp" di Serial Monitor
+// dengan termometer referensi, hitung selisihnya.
+// Contoh: Referensi=25.0°C, Raw=20.5°C → offset = +4.5
+#define LM35_CALIBRATION_OFFSET  5.0  // °C (sesuaikan hasil kalibrasi)
+
+// ========================================
+// TEMPERATURE THRESHOLDS
+// ========================================
+//
+// PILIH MODE SESUAI POSISI SENSOR:
+//
+// MODE A — Sensor di dalam box bersama ESP32 (prototype/demo):
+//   ESP32 self-heat + box insulation membuat suhu dalam box lebih tinggi.
+//   Threshold yang realistis:
+//     #define TEMP_NORMAL_MIN         18.0
+//     #define TEMP_NORMAL_MAX         40.0
+//     #define TEMP_WARNING_THRESHOLD  40.0
+//     #define TEMP_DANGER_THRESHOLD   60.0
+//
+// MODE B — Sensor di luar box, mengukur inlet rack data center (produksi):
+//   Sesuai standar ASHRAE A1 / ISO 17025 data center:
+//     #define TEMP_NORMAL_MIN         18.0
+//     #define TEMP_NORMAL_MAX         27.0
+//     #define TEMP_WARNING_THRESHOLD  27.0
+//     #define TEMP_DANGER_THRESHOLD   57.0
+//
+// Default: MODE A (sensor dalam box)
+#define TEMP_NORMAL_MIN         18.0  // °C
+#define TEMP_NORMAL_MAX         40.0  // °C
+#define TEMP_WARNING_THRESHOLD  40.0  // °C — Warning threshold
+#define TEMP_DANGER_THRESHOLD   60.0  // °C — Danger/alarm threshold
+
+#endif // CONFIG_H
