@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Thermometer, Bell, Webhook, Mail, MessageCircle, Phone, Info,
+  Thermometer, Bell, Webhook, Mail, MessageCircle, Phone, Info, Save, Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 function SettingToggle({
-  icon: Icon, label, description, checked, onCheckedChange, badge,
+  icon: Icon, label, description, checked, onCheckedChange, badge, disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -20,6 +22,7 @@ function SettingToggle({
   checked: boolean;
   onCheckedChange: (v: boolean) => void;
   badge?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between py-3">
@@ -33,12 +36,15 @@ function SettingToggle({
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
     </div>
   );
 }
 
 export function SettingsView() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [warningThreshold, setWarningThreshold] = useState(60);
   const [dangerThreshold, setDangerThreshold] = useState(80);
   const [notifications, setNotifications] = useState({
@@ -48,8 +54,113 @@ export function SettingsView() {
     push: true,
   });
 
+  // Load settings from API
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) throw new Error("Failed to load settings");
+        
+        const data = await res.json();
+        
+        setWarningThreshold(parseInt(data.tempWarningThreshold));
+        setDangerThreshold(parseInt(data.tempDangerThreshold));
+        setNotifications({
+          email: data.emailNotifications === "true",
+          telegram: data.telegramNotifications === "true",
+          whatsapp: data.whatsappNotifications === "true",
+          push: data.pushNotifications === "true",
+        });
+      } catch (error) {
+        console.error("Error loading settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load settings. Using defaults.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSettings();
+  }, [toast]);
+
+  // Save settings to API
+  const saveSettings = async () => {
+    setSaving(true);
+    try {
+      const settings = {
+        tempWarningThreshold: String(warningThreshold),
+        tempDangerThreshold: String(dangerThreshold),
+        emailNotifications: String(notifications.email),
+        telegramNotifications: String(notifications.telegram),
+        whatsappNotifications: String(notifications.whatsapp),
+        pushNotifications: String(notifications.push),
+      };
+
+      const res = await fetch("/api/settings/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save settings");
+
+      toast({
+        title: "✅ Settings Saved",
+        description: "Your settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "❌ Save Failed",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Auto-validate thresholds
+  useEffect(() => {
+    if (warningThreshold >= dangerThreshold) {
+      setDangerThreshold(warningThreshold + 10);
+    }
+  }, [warningThreshold, dangerThreshold]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Save Button - Sticky at top */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4">
+        <Button 
+          onClick={saveSettings} 
+          disabled={saving} 
+          className="w-full sm:w-auto"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Settings
+            </>
+          )}
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -109,6 +220,7 @@ export function SettingsView() {
             badge="Coming Soon"
             checked={notifications.email}
             onCheckedChange={(v) => setNotifications({ ...notifications, email: v })}
+            disabled={true}
           />
           <SettingToggle
             icon={MessageCircle}
@@ -117,6 +229,7 @@ export function SettingsView() {
             badge="Coming Soon"
             checked={notifications.telegram}
             onCheckedChange={(v) => setNotifications({ ...notifications, telegram: v })}
+            disabled={true}
           />
           <SettingToggle
             icon={Phone}
@@ -125,6 +238,7 @@ export function SettingsView() {
             badge="Coming Soon"
             checked={notifications.whatsapp}
             onCheckedChange={(v) => setNotifications({ ...notifications, whatsapp: v })}
+            disabled={true}
           />
           <SettingToggle
             icon={Bell}
@@ -187,7 +301,7 @@ export function SettingsView() {
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Version</span>
-            <span className="font-medium">1.0.0</span>
+            <span className="font-medium">1.0.1</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Platform</span>

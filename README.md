@@ -147,12 +147,12 @@ bunx prisma generate
 bunx prisma migrate dev
 
 # 5. (Opsional) Seed database dengan data contoh
-bunx prisma db seed
+bun run seed
 
 # 6. Jalankan development server
 bun run dev
-# atau
-npm run dev
+# atau dengan logging ke file dev.log (cross-platform)
+bun run dev:log
 
 # 7. Buka browser
 # http://localhost:3000
@@ -161,35 +161,295 @@ npm run dev
 ### Production Build
 
 ```bash
-# Build untuk production
+# Build untuk production (cross-platform)
 bun run build
 
 # Start production server
 bun run start
+# atau dengan logging ke file server.log (cross-platform)
+bun run start:log
 
 # Atau gunakan PM2 untuk process management
 pm2 start "bun run start" --name fireguard
 ```
 
+### 📝 Catatan Scripts
+
+Proyek ini menggunakan **cross-platform scripts** yang bekerja di Windows, Mac, dan Linux:
+
+- `bun run dev` - Jalankan development server (tanpa logging)
+- `bun run dev:log` - Development server dengan logging ke `dev.log`
+- `bun run build` - Build production (otomatis copy static files)
+- `bun run start` - Jalankan production server (tanpa logging)
+- `bun run start:log` - Production server dengan logging ke `server.log`
+
+**Fitur Logging:**
+- Log disimpan di file (`dev.log` atau `server.log`)
+- Output tetap ditampilkan di terminal
+- Cross-platform (menggunakan Node.js scripts, bukan Unix commands)
+
+Lihat folder `scripts/` untuk detail implementasi.
+
 ---
 
 ## ⚙️ Konfigurasi
 
+### Setup Database
+
+FireGuardAI mendukung 3 pilihan database. Pilih yang sesuai dengan kebutuhan Anda:
+
+> **📖 Dokumentasi Lengkap:** Lihat [DATABASE-SETUP.md](DATABASE-SETUP.md) untuk panduan detail setup database di Windows, Mac, dan Linux.
+
+#### **Opsi 1: SQLite (Direkomendasikan untuk Development)** ✅
+
+**Kelebihan:**
+- ✅ Zero configuration - langsung jalan
+- ✅ Tidak perlu install database server
+- ✅ Perfect untuk development dan testing
+- ✅ Data tersimpan di file lokal
+
+**Setup:**
+
+1. Copy file environment:
+```bash
+cp .env.example .env
+```
+
+2. Pastikan `DATABASE_URL` di `.env` menggunakan SQLite:
+```env
+DATABASE_URL="file:./prisma/db/custom.db"
+```
+
+3. Update `prisma/schema.prisma` - ubah provider ke `sqlite`:
+```prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+4. Generate Prisma Client dan jalankan migrasi:
+```bash
+# Generate Prisma Client
+bunx prisma generate
+
+# Buat database dan tabel
+bunx prisma migrate dev --name init
+
+# (Opsional) Isi dengan data contoh
+bun run seed
+```
+
+5. Verifikasi database:
+```bash
+# Buka Prisma Studio untuk melihat database
+bunx prisma studio
+# Akses: http://localhost:5555
+```
+
+**Catatan:** File database akan dibuat di `prisma/db/custom.db` (sudah di-gitignore).
+
+---
+
+#### **Opsi 2: PostgreSQL (Direkomendasikan untuk Production)** 🚀
+
+**Kelebihan:**
+- ✅ Performa lebih baik untuk production
+- ✅ Mendukung concurrent connections
+- ✅ Fitur database lengkap
+- ✅ Cocok untuk deployment besar
+
+**Setup:**
+
+1. **Install PostgreSQL:**
+
+   **Windows:**
+   ```bash
+   # Download dari: https://www.postgresql.org/download/windows/
+   # Atau gunakan Chocolatey:
+   choco install postgresql
+   ```
+
+   **Mac:**
+   ```bash
+   # Menggunakan Homebrew:
+   brew install postgresql@15
+   brew services start postgresql@15
+   ```
+
+   **Linux (Ubuntu/Debian):**
+   ```bash
+   sudo apt update
+   sudo apt install postgresql postgresql-contrib
+   sudo systemctl start postgresql
+   ```
+
+2. **Buat Database:**
+
+   ```bash
+   # Login ke PostgreSQL
+   # Windows: psql -U postgres
+   # Mac/Linux: sudo -u postgres psql
+
+   # Di psql prompt:
+   CREATE DATABASE fireguard_ai;
+   CREATE USER fireguard_user WITH PASSWORD 'your_secure_password';
+   GRANT ALL PRIVILEGES ON DATABASE fireguard_ai TO fireguard_user;
+   \q
+   ```
+
+3. **Konfigurasi `.env`:**
+   ```env
+   DATABASE_URL="postgresql://fireguard_user:your_secure_password@localhost:5432/fireguard_ai"
+   ```
+
+4. **Update `prisma/schema.prisma`:**
+   ```prisma
+   datasource db {
+     provider = "postgresql"
+     url      = env("DATABASE_URL")
+   }
+   ```
+
+5. **Jalankan Migrasi:**
+   ```bash
+   bunx prisma generate
+   bunx prisma migrate deploy
+   bun run seed  # Opsional
+   ```
+
+**Troubleshooting PostgreSQL:**
+
+- **Koneksi ditolak**: Cek PostgreSQL service berjalan
+  ```bash
+  # Windows
+  net start postgresql-x64-15
+
+  # Mac
+  brew services list
+
+  # Linux
+  sudo systemctl status postgresql
+  ```
+
+- **Authentication failed**: Cek username/password di `DATABASE_URL`
+- **Database tidak ada**: Jalankan `CREATE DATABASE` seperti step 2
+
+---
+
+#### **Opsi 3: Supabase (Cloud PostgreSQL)** ☁️
+
+**Kelebihan:**
+- ✅ Free tier 500MB storage
+- ✅ Managed database - no maintenance
+- ✅ Built-in backups
+- ✅ Akses dari mana saja
+- ✅ Auto-scaling
+
+**Setup:**
+
+1. **Buat Account Supabase:**
+   - Kunjungi [supabase.com](https://supabase.com)
+   - Sign up gratis
+   - Klik **New Project**
+
+2. **Isi Detail Project:**
+   - Name: `fireguard-ai`
+   - Database Password: `your_secure_password` (simpan baik-baik!)
+   - Region: Pilih yang terdekat (Singapore untuk Asia)
+   - Pricing Plan: **Free**
+
+3. **Dapatkan Connection String:**
+   - Go to **Settings** → **Database**
+   - Scroll ke **Connection String** → **URI**
+   - Copy connection string (contoh):
+   ```
+   postgresql://postgres:[YOUR-PASSWORD]@db.abcdefghijk.supabase.co:5432/postgres
+   ```
+
+4. **Konfigurasi `.env`:**
+   ```env
+   DATABASE_URL="postgresql://postgres:your_secure_password@db.abcdefghijk.supabase.co:5432/postgres"
+   ```
+   
+   **⚠️ Ganti `[YOUR-PASSWORD]` dengan password yang Anda buat!**
+
+5. **Update `prisma/schema.prisma`:**
+   ```prisma
+   datasource db {
+     provider = "postgresql"
+     url      = env("DATABASE_URL")
+   }
+   ```
+
+6. **Jalankan Migrasi:**
+   ```bash
+   bunx prisma generate
+   bunx prisma migrate deploy
+   bun run seed  # Opsional
+   ```
+
+7. **Verifikasi di Supabase Dashboard:**
+   - Go to **Table Editor**
+   - Lihat tabel: `Device`, `SensorLog`, `Alert`, `SystemSettings`
+
+**Tips Supabase:**
+- ✅ Gunakan **Connection Pooling** untuk production (port 6543)
+- ✅ Enable **Row Level Security (RLS)** untuk keamanan ekstra
+- ✅ Monitoring usage di Dashboard → Settings → Usage
+- ✅ Setup automatic backups di Settings → Database → Backups
+
+---
+
+### Perbandingan Database
+
+| Fitur | SQLite | PostgreSQL | Supabase |
+|-------|--------|------------|----------|
+| **Setup** | ⭐⭐⭐⭐⭐ Instant | ⭐⭐⭐ Medium | ⭐⭐⭐⭐ Easy |
+| **Performance** | ⭐⭐⭐ Good | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐ Very Good |
+| **Concurrent Users** | ⭐⭐ Limited | ⭐⭐⭐⭐⭐ Unlimited | ⭐⭐⭐⭐⭐ Unlimited |
+| **Cost** | ✅ Free | ✅ Free (self-hosted) | ✅ Free (500MB) |
+| **Maintenance** | ✅ Zero | ⚠️ Manual | ✅ Managed |
+| **Backup** | Manual | Manual/Auto | ✅ Auto |
+| **Remote Access** | ❌ No | ⚠️ Need config | ✅ Yes |
+| **Best For** | Development | Production (VPS) | Production (Cloud) |
+
+**Rekomendasi:**
+- 🎓 **Tugas Kuliah/Demo**: SQLite
+- 🏢 **Production (VPS)**: PostgreSQL
+- ☁️ **Production (Cloud)**: Supabase
+- 🚀 **Scaling**: Supabase atau PostgreSQL
+
+---
+
 ### Environment Variables
 
-Buat file `.env` di root directory:
+Setelah memilih database, lengkapi konfigurasi di file `.env`:
 
 ```env
-# Database (pilih salah satu)
-DATABASE_URL="postgresql://user:password@localhost:5432/fireguard_ai_db"
-# atau SQLite untuk development
-# DATABASE_URL="file:./prisma/db/custom.db"
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# Pilih salah satu:
 
-# Application
+# SQLite (Development)
+DATABASE_URL="file:./prisma/db/custom.db"
+
+# PostgreSQL (Production)
+# DATABASE_URL="postgresql://fireguard_user:password@localhost:5432/fireguard_ai"
+
+# Supabase (Cloud)
+# DATABASE_URL="postgresql://postgres:password@db.xxx.supabase.co:5432/postgres"
+
+# ============================================
+# APPLICATION SETTINGS
+# ============================================
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="development"
 
-# AI Chatbot (OpenRouter)
+# ============================================
+# AI CHATBOT (OpenRouter)
+# ============================================
 OPENROUTER_API_KEY="sk-or-v1-your-api-key-here"
 OPENROUTER_MODEL="google/gemini-flash-1.5-8b"
 ```
@@ -200,13 +460,85 @@ OPENROUTER_MODEL="google/gemini-flash-1.5-8b"
 2. Sign up / Login
 3. Navigasi ke [API Keys](https://openrouter.ai/keys)
 4. Buat key baru
-5. Copy dan paste ke `.env`
+5. Copy dan paste ke `.env` → `OPENROUTER_API_KEY`
 
 **Model Gratis yang Tersedia:**
-- `google/gemini-flash-1.5-8b` (Direkomendasikan)
+- `google/gemini-flash-1.5-8b` (Direkomendasikan - cepat & berkualitas)
+- `openai/gpt-oss-20b:free` (Open source GPT alternative)
 - `meta-llama/llama-3.2-3b-instruct:free`
 - `qwen/qwen-2-7b-instruct:free`
 - `microsoft/phi-3-mini-128k-instruct:free`
+
+---
+
+### Perintah Database Prisma (Cross-Platform)
+
+Semua perintah berikut bekerja di Windows, Mac, dan Linux:
+
+```bash
+# ====================================
+# GENERATE PRISMA CLIENT
+# ====================================
+
+# Option 1: Safe generate (Recommended - Auto-retry dengan cleanup)
+bun run db:generate:safe
+
+# Option 2: Force generate (Hapus .prisma dulu, lalu generate)
+bun run db:generate:force
+
+# Option 3: Standard generate (Mungkin error jika dev server running)
+bun run db:generate
+# atau
+bunx prisma generate
+
+# ====================================
+# DATABASE MIGRATION
+# ====================================
+
+# Buat migrasi baru (development)
+bunx prisma migrate dev --name nama_migrasi
+
+# Apply migrasi (production)
+bunx prisma migrate deploy
+
+# Reset database (hapus semua data + migrasi ulang)
+bunx prisma migrate reset
+
+# Check migration status
+bunx prisma migrate status
+
+# ====================================
+# OTHER COMMANDS
+# ====================================
+
+# Isi database dengan data contoh
+bun run seed
+
+# Buka database browser (Prisma Studio)
+bunx prisma studio
+
+# Push schema tanpa migrasi (quick development)
+bunx prisma db push
+
+# Format schema file
+bunx prisma format
+
+# Validate schema
+bunx prisma validate
+```
+
+**Tips:**
+- ✅ **Selalu gunakan `db:generate:safe`** jika sering error EPERM
+- ✅ Gunakan `migrate dev` saat development (membuat migration files)
+- ✅ Gunakan `migrate deploy` di production (tanpa prompt)
+- ✅ `db push` lebih cepat untuk prototyping (tidak create migration files)
+- ⚠️ Selalu backup database sebelum `migrate reset`
+
+**Jika Error EPERM (Windows):**
+```bash
+# Quick fix
+taskkill /F /IM node.exe && taskkill /F /IM bun.exe && bun run db:generate:safe
+```
 
 ---
 
@@ -214,19 +546,27 @@ OPENROUTER_MODEL="google/gemini-flash-1.5-8b"
 
 ### Konfigurasi ESP32
 
-#### 1. Install Arduino IDE
-- Download dari [arduino.cc](https://www.arduino.cc/en/software)
-- Install dukungan board ESP32
+> **📖 Panduan Lengkap:** Lihat [firmware/ARDUINO-SETUP.md](firmware/ARDUINO-SETUP.md) untuk setup Arduino IDE, install libraries, dan troubleshooting lengkap.
 
-#### 2. Install Library yang Diperlukan
+#### 1. Install Arduino IDE & Libraries
+
+**Quick Install:**
 ```
-- WiFi.h (built-in)
-- HTTPClient.h (built-in)
-- ArduinoJson (Library Manager)
-- DHT sensor library (untuk suhu/kelembaban)
+1. Download Arduino IDE: https://www.arduino.cc/en/software
+2. Install ESP32 board support via Board Manager
+3. Install library: ArduinoJson (v6.21.0+)
 ```
 
-#### 3. Konfigurasi Firmware
+**Verify:**
+- Board: ESP32 Dev Module tersedia
+- Library: ArduinoJson muncul di Include Library
+- Port: ESP32 terdeteksi
+
+**📖 Detail:** [firmware/ARDUINO-SETUP.md](firmware/ARDUINO-SETUP.md)
+
+---
+
+#### 2. Konfigurasi Firmware
 
 Buka `firmware/esp32_fire_monitor_complete/esp32_fire_monitor_complete.ino`
 
@@ -247,14 +587,33 @@ float latitude = -6.2088;   // Jakarta - Monas
 float longitude = 106.8456;
 ```
 
-#### 4. Upload ke ESP32
+**⚠️ PENTING:** Gunakan file `config.h` untuk keamanan!
+```bash
+cd firmware/esp32_fire_monitor_complete
+cp config.h.example config.h
+# Edit config.h (sudah di-gitignore)
+```
+
+**📖 Detail:** [firmware/esp32_fire_monitor_complete/README.md](firmware/esp32_fire_monitor_complete/README.md)
+
+---
+
+#### 3. Upload ke ESP32
 1. Hubungkan ESP32 via USB
 2. Pilih board: **ESP32 Dev Module**
 3. Pilih port: **/dev/cu.usbserial-xxx** (Mac) atau **COM3** (Windows)
-4. Klik **Upload**
+4. Klik **Upload** (Ctrl+U)
 5. Buka **Serial Monitor** (115200 baud)
 
-#### 5. Dapatkan API Key dari Dashboard
+**Troubleshooting Upload:**
+- **Library not found:** Install ArduinoJson via Library Manager
+- **Port not found:** Install USB drivers (CP210x or CH340)
+- **Upload failed:** Hold BOOT button during upload
+- **Compilation error:** Check [firmware/ARDUINO-SETUP.md](firmware/ARDUINO-SETUP.md)
+
+---
+
+#### 4. Dapatkan API Key dari Dashboard
 1. Buka dashboard FireGuardAI
 2. Pergi ke halaman **Devices**
 3. Klik **Add Device**
@@ -562,6 +921,11 @@ FireGuardAI/
 │   ├── AI_chatbot.png        # Screenshot
 │   ├── Location Sensor.png
 │   └── icon.svg              # Favicon & Icon
+├── scripts/                  # Cross-platform helper scripts
+│   ├── dev-with-log.js       # Dev server dengan logging
+│   ├── start-with-log.js     # Production server dengan logging
+│   ├── copy-build-files.js   # Copy static files (cross-platform)
+│   └── README.md             # Dokumentasi scripts
 ├── src/
 │   ├── app/                  # Next.js App Router
 │   │   ├── api/              # API routes
@@ -593,10 +957,13 @@ FireGuardAI/
 │   └── seed.ts               # Data seed
 ├── firmware/                 # Firmware ESP32
 │   └── esp32_fire_monitor_complete/
-│       └── esp32_fire_monitor_complete.ino
-├── .env                      # Environment variables
+│       ├── esp32_fire_monitor_complete.ino
+│       ├── config.h          # Konfigurasi WiFi & API (gitignore)
+│       ├── config.h.example  # Template konfigurasi
+│       └── README.md         # Dokumentasi firmware
+├── .env                      # Environment variables (gitignore)
 ├── .env.example              # Template environment
-├── package.json              # Dependencies
+├── package.json              # Dependencies & cross-platform scripts
 ├── tsconfig.json             # Konfigurasi TypeScript
 ├── tailwind.config.ts        # Konfigurasi Tailwind
 └── README.md                 # File ini
@@ -614,6 +981,7 @@ FireGuardAI/
 - ✅ HTTPS direkomendasikan untuk production
 - ✅ Rate limiting direkomendasikan
 - ✅ Konfigurasi CORS
+- ✅ Database credentials di `.env` (gitignored)
 
 ### Rekomendasi
 1. **Ubah kredensial default** di production
@@ -623,6 +991,197 @@ FireGuardAI/
 5. **Backup database secara berkala**
 6. **Monitor penggunaan API**
 7. **Update dependencies** secara berkala
+8. **Gunakan PostgreSQL/Supabase** untuk production (bukan SQLite)
+9. **Enable database connection pooling** untuk high traffic
+10. **Rotate API keys** secara periodik
+
+---
+
+## 🐛 Troubleshooting
+
+### Prisma Generate Issues (Windows)
+
+#### Error: `EPERM: operation not permitted`
+
+**Penyebab:** File `query_engine-windows.dll.node` sedang digunakan oleh process lain.
+
+**Solusi Cepat:**
+
+```bash
+# 1. Stop semua dev servers (Ctrl+C di terminal)
+
+# 2. Kill Node.js processes
+taskkill /F /IM node.exe
+taskkill /F /IM bun.exe
+
+# 3. Gunakan safe generate script
+bun run db:generate:safe
+
+# Atau manual:
+# Hapus folder .prisma
+rmdir /s /q node_modules\.prisma
+# Generate ulang
+bunx prisma generate
+```
+
+**Pencegahan:**
+- ⚠️ Jangan run `prisma generate` saat dev server berjalan
+- ⚠️ Stop semua terminal yang menjalankan `bun run dev`
+- ✅ Gunakan `bun run db:generate:safe` (auto-retry & cleanup)
+
+---
+
+### Database Issues
+
+#### Error: `Environment variable not found: DATABASE_URL`
+
+**Solusi:**
+```bash
+# Pastikan file .env ada
+cp .env.example .env
+
+# Edit .env dan set DATABASE_URL
+# Contoh untuk SQLite:
+# DATABASE_URL="file:./prisma/db/custom.db"
+```
+
+#### Error: `Can't reach database server`
+
+**PostgreSQL:**
+```bash
+# Cek service PostgreSQL berjalan
+# Windows
+net start postgresql-x64-15
+
+# Mac
+brew services start postgresql@15
+
+# Linux
+sudo systemctl start postgresql
+sudo systemctl status postgresql
+```
+
+**Supabase:**
+- Cek internet connection
+- Verifikasi connection string di Supabase Dashboard
+- Pastikan password benar (tanpa `[` `]`)
+
+#### Error: `Database does not exist`
+
+**PostgreSQL:**
+```bash
+# Buat database
+createdb fireguard_ai
+
+# Atau via psql:
+psql -U postgres
+CREATE DATABASE fireguard_ai;
+\q
+```
+
+**SQLite/Supabase:** Jalankan migrasi:
+```bash
+bunx prisma migrate deploy
+```
+
+#### Error: `Prisma schema validation error`
+
+**Solusi:**
+```bash
+# Format dan validate schema
+bunx prisma format
+bunx prisma validate
+
+# Jika masih error, cek provider sesuai dengan DATABASE_URL
+# SQLite → provider = "sqlite"
+# PostgreSQL/Supabase → provider = "postgresql"
+```
+
+#### Error: `Migration failed`
+
+**Solusi:**
+```bash
+# Reset database (HATI-HATI: Hapus semua data!)
+bunx prisma migrate reset
+
+# Atau rollback manual dan coba lagi
+bunx prisma migrate resolve --rolled-back [migration_name]
+bunx prisma migrate deploy
+```
+
+#### Database Terlalu Besar (SQLite)
+
+**Solusi:**
+```bash
+# Hapus log lama (via Prisma Studio atau script)
+bunx prisma studio
+
+# Atau migrate ke PostgreSQL:
+# 1. Export data
+# 2. Update schema.prisma provider ke "postgresql"
+# 3. Update DATABASE_URL
+# 4. Import data
+```
+
+### Application Issues
+
+#### Port 3000 Sudah Digunakan
+
+**Solusi:**
+```bash
+# Ubah port di package.json atau jalankan dengan port lain
+bun run dev -- -p 3001
+
+# Atau kill process di port 3000
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID [PID] /F
+
+# Mac/Linux
+lsof -ti:3000 | xargs kill -9
+```
+
+#### Dependencies Error
+
+**Solusi:**
+```bash
+# Hapus node_modules dan reinstall
+# Windows
+rmdir /s /q node_modules
+del bun.lock
+
+# Mac/Linux
+rm -rf node_modules
+rm bun.lock
+
+# Reinstall
+bun install
+```
+
+#### Build Error
+
+**Solusi:**
+```bash
+# Clean build artifacts
+# Windows
+rmdir /s /q .next
+
+# Mac/Linux
+rm -rf .next
+
+# Rebuild
+bun run build
+```
+
+### ESP32 Issues
+
+Lihat [firmware/esp32_fire_monitor_complete/README.md](firmware/esp32_fire_monitor_complete/README.md) untuk troubleshooting hardware lengkap.
+
+**Quick Fixes:**
+- **WiFi tidak connect**: Cek SSID/password di `config.h`
+- **Data tidak terkirim**: Cek server running dan API key benar
+- **Sensor tidak akurat**: Lakukan kalibrasi sensor
+- **LED tidak menyala**: Cek wiring dan resistor
 
 ---
 
@@ -759,10 +1318,15 @@ Proyek ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) unt
 ## 📞 Dukungan
 
 ### Dokumentasi
+- [Panduan Setup Database](DATABASE-SETUP.md) - **Setup lengkap SQLite, PostgreSQL, dan Supabase**
+- [Panduan Arduino IDE](firmware/ARDUINO-SETUP.md) - **Install Arduino IDE, ESP32, dan libraries**
+- [Quick Start Guide](QUICK-START.md) - **Mulai dalam 5 menit**
+- [Commands Cheat Sheet](COMMANDS-CHEATSHEET.md) - **Quick reference commands**
 - [Panduan Setup](SETUP-GUIDE.md)
 - [Fitur AI Chatbot](CHATBOT-FEATURES.md)
 - [Panduan Sistem Koordinat](COORDINATE-SYSTEM-GUIDE.md)
 - [Ringkasan Implementasi](IMPLEMENTATION-SUMMARY.md)
+- [Cross-Platform Scripts](scripts/README.md) - **Dokumentasi helper scripts**
 
 ### Dapatkan Bantuan
 - 📧 Email: support@fireguardai.com
